@@ -21,6 +21,7 @@ type UseMainManifest = Record<string, UseMainFunctionManifestEntry>;
 // --- Plugin Options Interface ---
 interface UseMainPluginOptions {
   generateTypes?: boolean;
+  directiveKeyword?: 'use electron' | 'use electron-main' | 'use main'; // Added option to configure the directive
 }
 
 // --- Constants --- (remain the same)
@@ -37,75 +38,8 @@ let tempDirPath = '';
 let manifestPath = '';
 let rootDir = '';
 let accumulatedFunctions = new Map<string, UseMainFunctionManifestEntry>(); // Global map persists across hooks in one process
+let directiveKeyword = 'use electron'; // Default to 'use electron'
 
-// --- Add test mock data
-const TEST_MOCK_MANIFEST = {
-  'src/renderer/src/main-operations.ts::getOsInfo': {
-    id: 'src/renderer/src/main-operations.ts::getOsInfo',
-    name: 'getOsInfo',
-    params: [{ name: 'detailLevel', typeString: 'number' }],
-    paramsString: 'detailLevel: number',
-    returnTypeString: 'Promise<{ platform: string; arch: string; hostname?: string }>',
-    body: `
-    console.log(\`[Main Process: getOsInfo] Received detailLevel: \${detailLevel}\`);
-    const platform = os.platform();
-    const arch = os.arch();
-    let hostname = undefined;
-    if (detailLevel > 0) {
-        hostname = os.hostname();
-    }
-    return { platform, arch, hostname };`,
-    filePath: 'src/renderer/src/main-operations.ts'
-  },
-  'src/renderer/src/main-operations.ts::addNumbers': {
-    id: 'src/renderer/src/main-operations.ts::addNumbers',
-    name: 'addNumbers',
-    params: [{ name: 'a', typeString: 'number' }, { name: 'b', typeString: 'number' }],
-    paramsString: 'a: number, b: number',
-    returnTypeString: 'Promise<number>',
-    body: `
-    console.log(\`[Main Process: addNumbers] Adding \${a} and \${b}\`);
-    return a + b;`,
-    filePath: 'src/renderer/src/main-operations.ts'
-  },
-  'src/renderer/src/main-operations.ts::riskyOperation': {
-    id: 'src/renderer/src/main-operations.ts::riskyOperation',
-    name: 'riskyOperation',
-    params: [{ name: 'shouldFail', typeString: 'boolean' }],
-    paramsString: 'shouldFail: boolean',
-    returnTypeString: 'Promise<string>',
-    body: `
-    console.log(\`[Main Process: riskyOperation] Called with shouldFail=\${shouldFail}\`);
-    if (shouldFail) {
-        throw new Error("Operation failed as requested!");
-    }
-    return "Operation succeeded!";`,
-    filePath: 'src/renderer/src/main-operations.ts'
-  },
-  'src/renderer/src/main-operations.ts::testMainFunction': {
-    id: 'src/renderer/src/main-operations.ts::testMainFunction',
-    name: 'testMainFunction',
-    params: [],
-    paramsString: '',
-    returnTypeString: 'Promise<string>',
-    body: `
-    console.log('[Main Process: testMainFunction] Called');
-    return "Main process is working!";`,
-    filePath: 'src/renderer/src/main-operations.ts'
-  },
-  'src/renderer/src/components/SystemInfo.tsx::componentTestFunction': {
-    id: 'src/renderer/src/components/SystemInfo.tsx::componentTestFunction',
-    name: 'componentTestFunction',
-    params: [{ name: 'message', typeString: 'string' }],
-    paramsString: 'message: string',
-    returnTypeString: 'Promise<string>',
-    body: `
-    console.log("componentTestFunction received:", message);
-    await new Promise(resolve => setTimeout(resolve, 50));
-    return \`Main process received: "\${message}" and says hello back!\`;`,
-    filePath: 'src/renderer/src/components/SystemInfo.tsx'
-  }
-};
 
 // --- Helper Functions ---
 
@@ -269,7 +203,14 @@ function applyRegexStripping(code: string, logger: ResolvedConfig['logger']): st
 
 // --- Other helpers (generateId, isUseMainDirective, getNodePosition, getTypeAnnotationString, extractParamInfo) remain the same ---
 export function generateId(root: string, filePath: string, functionName: string | null): string { const absoluteFilePath = path.isAbsolute(filePath) ? filePath : path.resolve(root, filePath); const relativePath = normalizePath(path.relative(root, absoluteFilePath)); return `${relativePath}::${functionName || '_anonymous_'}`; }
-function isUseMainDirective(node: BabelTypes.Node | undefined | null): node is BabelTypes.ExpressionStatement & { expression: BabelTypes.StringLiteral } { return !!node && node.type === 'ExpressionStatement' && node.expression.type === 'StringLiteral' && node.expression.value === 'use main'; }
+function isUseMainDirective(node: BabelTypes.Node | undefined | null): node is BabelTypes.ExpressionStatement & { expression: BabelTypes.StringLiteral } { 
+  return !!node && 
+    node.type === 'ExpressionStatement' && 
+    node.expression.type === 'StringLiteral' && 
+    (node.expression.value === directiveKeyword || 
+     node.expression.value === 'use electron-main' || 
+     node.expression.value === 'use main'); 
+}
 function getNodePosition(node: BabelTypes.Node | undefined | null): { start: number | null; end: number | null } { const start = typeof node?.start === 'number' ? node.start : null; const end = typeof node?.end === 'number' ? node.end : null; return { start, end }; }
 function getTypeAnnotationString(node: BabelTypes.Node | null | undefined, code: string): string { if (node?.type === 'TSTypeAnnotation' && node.typeAnnotation) { const pos = getNodePosition(node.typeAnnotation); if (pos.start !== null && pos.end !== null) { return code.substring(pos.start, pos.end); } } return 'any'; }
 function extractParamInfo(param: BabelTypes.Node, code: string): ParamInfo { let paramName = 'unknown'; let typeAnnotationNode: BabelTypes.Node | null | undefined = null; if (BabelTypes.isIdentifier(param)) { paramName = param.name; typeAnnotationNode = param.typeAnnotation; } else if (BabelTypes.isAssignmentPattern(param) && BabelTypes.isIdentifier(param.left)) { paramName = param.left.name; typeAnnotationNode = param.left.typeAnnotation; } else if (BabelTypes.isRestElement(param)) { if (BabelTypes.isIdentifier(param.argument)) { paramName = `...${param.argument.name}`; } typeAnnotationNode = param.typeAnnotation; } else if (BabelTypes.isObjectPattern(param)) { paramName = '{...}'; typeAnnotationNode = param.typeAnnotation; } else if (BabelTypes.isArrayPattern(param)) { paramName = '[...]'; typeAnnotationNode = param.typeAnnotation; } const typeString = getTypeAnnotationString(typeAnnotationNode, code); return { name: paramName, typeString }; }
@@ -498,6 +439,9 @@ export function useMainPlugin(target: 'renderer' | 'preload' | 'main', options: 
     let isDev = false;
     // Default to false based on the request to make it optional
     const generateTypes = options.generateTypes === true; // Default to false
+    
+    // Set the directive keyword from options or use default
+    directiveKeyword = options.directiveKeyword || 'use electron';
 
     return {
         name: `${PLUGIN_NAME}-${target}`,
@@ -572,7 +516,12 @@ declare global {
             const cleanId = id.includes(VITE_INTERNAL_QUERY) ? id.split(VITE_INTERNAL_QUERY)[0] : id;
             const normalizedId = normalizePath(cleanId);
 
-            if (!/\.(t|j)sx?$/.test(normalizedId) || normalizedId.includes('/node_modules/') || (tempDirPath && normalizedId.startsWith(tempDirPath)) || (!code.includes('"use main"') && !code.includes("'use main'"))) { return null; }
+            if (!/\.(t|j)sx?$/.test(normalizedId) || normalizedId.includes('/node_modules/') || (tempDirPath && normalizedId.startsWith(tempDirPath)) || 
+                (!code.includes('"use main"') && !code.includes("'use main'") && 
+                 !code.includes('"use electron"') && !code.includes("'use electron'") &&
+                 !code.includes('"use electron-main"') && !code.includes("'use electron-main'"))) { 
+                return null; 
+            }
             if (target === 'main') return null;
 
             logger.info(`[${PLUGIN_NAME}:${target}] Processing: ${normalizedId}`);
@@ -589,12 +538,14 @@ declare global {
             // --- AST Traversal --- (Pass file-local map)
             traverse(ast, {
                 Program(path) {
-                    // Add the RPC bridge function to the module scope if we find 'use main' directives
-                    if (code.includes('"use main"') || code.includes("'use main'")) {
+                    // Add the RPC bridge function to the module scope if we find directives
+                    if (code.includes('"use main"') || code.includes("'use main'") ||
+                        code.includes('"use electron"') || code.includes("'use electron'") ||
+                        code.includes('"use electron-main"') || code.includes("'use electron-main'")) {
                         // Add at the beginning of the file to ensure it's available for all functions
                         const rpcBridgeCode = `
 // --- RPC Bridge Function ---
-// Provides a client-side interface to call main process functions
+// Provides a client-side interface to call Electron main process functions
 async function __electron_rpc_call(functionId, args) {
   // Extract function name for error reporting
   const functionName = functionId.split('::').pop();
@@ -602,7 +553,7 @@ async function __electron_rpc_call(functionId, args) {
   // Make the RPC call through the exposed mainApi
   try {
     if (!window.mainApi || typeof window.mainApi[functionName] !== 'function') {
-      throw new Error(\`Main process function '\${functionName}' is not available\`);
+      throw new Error(\`Electron main process function '\${functionName}' is not available\`);
     }
     return await window.mainApi[functionName](...args);
   } catch (error) {
@@ -631,7 +582,10 @@ async function __electron_rpc_call(functionId, args) {
                 const bodyNode = node.body; 
                 let directiveNode: BabelTypes.Directive | BabelTypes.Node | null = null; 
                 
-                if (bodyNode.directives?.length > 0 && bodyNode.directives[0].value.value === 'use main') { 
+                if (bodyNode.directives?.length > 0 && 
+                    (bodyNode.directives[0].value.value === 'use main' || 
+                     bodyNode.directives[0].value.value === 'use electron' || 
+                     bodyNode.directives[0].value.value === 'use electron-main')) { 
                     directiveNode = bodyNode.directives[0]; 
                 } else if (bodyNode.body?.length > 0 && isUseMainDirective(bodyNode.body[0])) { 
                     directiveNode = bodyNode.body[0]; 
@@ -731,12 +685,12 @@ async function __electron_rpc_call(functionId, args) {
                         // window.mainApi either directly or through existence checks
                         const replacementBody = ` /* Body replaced by ${PLUGIN_NAME} */
   try {
-    // This is just a client-side RPC stub - the real implementation runs in the main process
+    // This is just a client-side RPC stub - the real implementation runs in the Electron main process
     ${returnTypeString && returnTypeString !== 'void' && returnTypeString !== 'any' 
       ? `return await __electron_rpc_call("${uniqueId}", [${argsToPass}]);` 
       : `await __electron_rpc_call("${uniqueId}", [${argsToPass}]);`}
   } catch (error) {
-    console.error("Error calling main process function ${functionName}:", error);
+    console.error("Error calling Electron main process function ${functionName}:", error);
     throw error;
   }`;
                         
@@ -746,7 +700,7 @@ async function __electron_rpc_call(functionId, args) {
                         if (!ipcBridgeAdded) {
                             const rpcBridgeCode = `
 // --- RPC Bridge Function ---
-// Provides a client-side interface to call main process functions
+// Provides a client-side interface to call Electron main process functions
 async function __electron_rpc_call(functionId, args) {
   // Extract function name for error reporting
   const functionName = functionId.split('::').pop();
@@ -754,7 +708,7 @@ async function __electron_rpc_call(functionId, args) {
   // Make the RPC call through the exposed mainApi
   try {
     if (!window.mainApi || typeof window.mainApi[functionName] !== 'function') {
-      throw new Error(\`Main process function '\${functionName}' is not available\`);
+      throw new Error(\`Electron main process function '\${functionName}' is not available\`);
     }
     return await window.mainApi[functionName](...args);
   } catch (error) {

@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getOsInfo } from '@renderer/main-operations';
 // Define the local function directly IF it's intended to be defined here
 async function componentTestFunction(message: string): Promise<string> {
-    "use main";
+    "use electron";
     console.log("componentTestFunctsion received:", message);
     await new Promise(resolve => setTimeout(resolve, 50));
     return `Main process received: "${message}" and says hello back!`;

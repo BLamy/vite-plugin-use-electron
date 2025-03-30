@@ -1,8 +1,8 @@
-# Electron + Vite: "use main" Demo
+# Electron + Vite: "use electron" Demo
 
 This project is a **Proof-of-Concept (POC)** demonstrating a Vite plugin (`vite-plugin-use-main.ts`) that enables a developer experience similar to React Server Components or tRPC within an Electron + React + TypeScript application built with `electron-vite`.
 
-**The Core Idea:** Write functions directly within your React (renderer process) codebase, add a simple `"use main";` directive at the top, and have them automatically execute in Electron's main process during runtime!
+**The Core Idea:** Write functions directly within your React (renderer process) codebase, add a simple `"use electron";` directive at the top, and have them automatically execute in Electron's main process during runtime!
 
 ```typescript
 // Example: src/shared/main-operations.ts
@@ -10,7 +10,7 @@ This project is a **Proof-of-Concept (POC)** demonstrating a Vite plugin (`vite-
 import os from 'node:os'; // This import works because the code runs in main!
 
 export async function getOsInfo(detailLevel: number) {
-  "use main"; // Magic happens here! ✨
+  "use electron"; // Magic happens here! ✨
 
   // This code actually executes in the Electron main process
   console.log(`[Main Process: getOsInfo] Received detailLevel: ${detailLevel}`);
@@ -24,10 +24,10 @@ export async function getOsInfo(detailLevel: number) {
 
 This repository showcases:
 
-1.  **The `"use main";` Directive:** A simple string literal that marks functions intended for main process execution.
+1.  **The `"use electron";` Directive:** A simple string literal that marks functions intended for main process execution.
 2.  **A Custom Vite Plugin (`vite-plugin-use-main.ts`):**
     *   Runs during the `build` process.
-    *   Uses `@babel/parser` to analyze the code and find functions marked with `"use main";`.
+    *   Uses `@babel/parser` to analyze the code and find functions marked with `"use electron";`.
     *   **Extracts** the implementation of these functions.
     *   **Generates a separate bundle** (`_generated_main_handlers.js`) containing the actual function logic and IPC handlers (`ipcMain.handle`) for the main process.
     *   **Generates an SDK** (`_generated_preload_bridge.js`) containing "stub" functions for the preload script. These stubs use `ipcRenderer.invoke` to call the main process.
@@ -42,14 +42,14 @@ This repository showcases:
 
 *   **Simplified IPC:** Drastically reduces the manual boilerplate needed to set up communication between the renderer and main processes for specific tasks. Define the function, add the directive, and call it.
 *   **Code Colocation:** Keep functions logically related to your UI components within the renderer source tree, even if they need main process capabilities.
-*   **Clear Separation:** The `"use main";` directive explicitly marks code that will run with Node.js privileges, improving code clarity and security reviews.
+*   **Clear Separation:** The `"use electron";` directive explicitly marks code that will run with Node.js privileges, improving code clarity and security reviews.
 *   **Seamless Node.js Access:** Easily write functions that interact with the filesystem (`fs`), OS (`os`), child processes, native Node modules, or perform heavy computations without blocking the UI thread.
 *   **Type Safety:** By defining a shared interface, you get type checking and autocompletion when calling main process functions from the renderer.
 *   **Developer Experience:** Aims for a smoother workflow, potentially reducing context switching compared to manually managing separate IPC channels for every operation.
 
 ## How it Works (High-Level Flow)
 
-1.  Developer adds `"use main";` to a function in the renderer codebase (e.g., `src/shared/main-operations.ts`).
+1.  Developer adds `"use electron";` to a function in the renderer codebase (e.g., `src/shared/main-operations.ts`).
 2.  During `npm run build`, the `useMainPlugin` (renderer target) parses the code.
 3.  The plugin identifies the function, extracts its body and signature, and stores this information in a temporary manifest (`node_modules/.vite-plugin-use-main/...`). It replaces the original function body in the renderer bundle.
 4.  The `useMainPlugin` (preload target) reads the manifest and generates `_generated_preload_bridge.js`, creating async stub functions that use `ipcRenderer.invoke` to call the main process via a specific channel, using the function's unique ID.
@@ -106,7 +106,7 @@ This POC demonstrates calling the following functions defined in `src/shared/mai
 Key files involved in this mechanism:
 
 *   `vite-plugin-use-main.ts`: The heart of the build-time magic.
-*   `src/shared/main-operations.ts`: Where `"use main"` functions are defined and exported. The `MainApi` type is also here.
+*   `src/shared/main-operations.ts`: Where `"use electron"` functions are defined and exported. The `MainApi` type is also here.
 *   `electron.vite.config.ts`: Where the `useMainPlugin` is configured for all three targets.
 *   `src/main/index.ts`: Imports and calls `setupMainHandlers` from the generated file.
 *   `src/preload/index.ts`: Imports the generated preload bridge (`require('./_generated_preload_bridge.js')`).
@@ -116,17 +116,17 @@ Key files involved in this mechanism:
 ## Limitations & Caveats (POC Status)
 
 *   **Build Only:** Does not currently work with the development server (`npm run dev`). HMR integration is complex.
-*   **Dependencies:** Code inside `"use main"` functions **cannot** easily `import`/`require` modules from the renderer source tree. It executes within the context of the generated main process handlers file. Only Node.js built-ins and dependencies installed for the *main process* are reliably available.
-*   **Serialization:** All arguments passed to and results returned from `"use main"` functions must be serializable via the Electron IPC mechanism (generally JSON-compatible). Complex classes, functions, etc., will not transfer correctly.
+*   **Dependencies:** Code inside `"use electron"` functions **cannot** easily `import`/`require` modules from the renderer source tree. It executes within the context of the generated main process handlers file. Only Node.js built-ins and dependencies installed for the *main process* are reliably available.
+*   **Serialization:** All arguments passed to and results returned from `"use electron"` functions must be serializable via the Electron IPC mechanism (generally JSON-compatible). Complex classes, functions, etc., will not transfer correctly.
 *   **Error Handling:** Basic error propagation exists, but more robust application-level error handling patterns are needed for production.
-*   **`this` Context:** The `this` context is **not** preserved when functions are moved to the main process. Avoid using `this` within `"use main"` functions.
-*   **Type Safety:** Relies on manually keeping the shared `MainApi` interface (`src/shared/main-operations.ts`) in sync with the actual exported `"use main"` functions.
+*   **`this` Context:** The `this` context is **not** preserved when functions are moved to the main process. Avoid using `this` within `"use electron"` functions.
+*   **Type Safety:** Relies on manually keeping the shared `MainApi` interface (`src/shared/main-operations.ts`) in sync with the actual exported `"use electron"` functions.
 *   **Experimental:** This is a proof-of-concept and has not been battle-tested. Use with caution.
 
 ## Future Ideas
 
 *   Support for `npm run dev` / HMR.
-*   Automatic dependency analysis and bundling for `"use main"` functions.
+*   Automatic dependency analysis and bundling for `"use electron"` functions.
 *   Generating TypeScript types automatically instead of manual interfaces.
 *   Configuration options for the plugin.
 *   More sophisticated error handling and serialization strategies.
