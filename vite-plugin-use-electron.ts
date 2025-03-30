@@ -1,4 +1,4 @@
-// vite-plugin-use-main.ts
+// vite-plugin-use-electron.ts
 import type { Plugin, ResolvedConfig, Rollup } from 'vite';
 import { parse as babelParse } from '@babel/parser';
 import _traverse, { NodePath } from '@babel/traverse';
@@ -25,13 +25,13 @@ interface UseMainPluginOptions {
 }
 
 // --- Constants --- (remain the same)
-const PLUGIN_NAME = 'vite-plugin-use-main';
-const TEMP_DIR_NAME = '.vite-plugin-use-main';
-const MANIFEST_FILE = 'use-main-manifest.json';
+const PLUGIN_NAME = 'vite-plugin-use-electron';
+const TEMP_DIR_NAME = '.vite-plugin-use-electron';
+const MANIFEST_FILE = 'use-electron-manifest.json';
 const GENERATED_PRELOAD_BRIDGE = '_generated_preload_bridge.js';
 const GENERATED_MAIN_HANDLERS = '_generated_main_handlers.js';
 const GENERATED_TYPES_FILE = 'rpcTree.gen.ts';
-const IPC_CHANNEL = 'ipc-use-main';
+const IPC_CHANNEL = 'ipc-use-electron';
 
 // --- Plugin State ---
 let tempDirPath = '';
@@ -243,8 +243,8 @@ function generatePreloadBridgeCode(functions: UseMainFunctionManifestEntry[], lo
   ${func.name}: async ${paramCode} => {
     try {
       ${hasRestParam 
-        ? `const result = await ipcRenderer.invoke('ipc-use-main', '${func.id}', args);` 
-        : `const result = await ipcRenderer.invoke('ipc-use-main', '${func.id}', [${func.params.map(p => p.name).join(', ')}]);`
+        ? `const result = await ipcRenderer.invoke('ipc-use-electron', '${func.id}', args);` 
+        : `const result = await ipcRenderer.invoke('ipc-use-electron', '${func.id}', [${func.params.map(p => p.name).join(', ')}]);`
       }
       return result;
     } catch (error) {
@@ -255,7 +255,7 @@ function generatePreloadBridgeCode(functions: UseMainFunctionManifestEntry[], lo
     }).join(',\n');
     
     return `
-/* vite-plugin-use-main - Preload Bridge API */
+/* vite-plugin-use-electron - Preload Bridge API */
 const { contextBridge, ipcRenderer } = require('electron');
 
 // Create API object with all main process functions
@@ -328,7 +328,7 @@ function generateMainHandlerCode(functions: UseMainFunctionManifestEntry[], logg
 
     // Match the expected setupMainHandlers function structure exactly
     return `
-/* vite-plugin-use-main - Main Process Handlers */
+/* vite-plugin-use-electron - Main Process Handlers */
 const { ipcMain } = require('electron');
 const os = require('node:os');
 

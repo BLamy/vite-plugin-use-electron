@@ -1,12 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import fs from 'fs-extra';
 import path from 'path';
-import { useMainPlugin } from '../vite-plugin-use-main';
-import { generateId } from '../vite-plugin-use-main';
+import { useMainPlugin } from '../vite-plugin-use-electron';
 import os from 'os';
 
 // Constants
-const TEST_TEMP_DIR = path.join(os.tmpdir(), 'vite-plugin-use-main-test');
+const TEST_TEMP_DIR = path.join(os.tmpdir(), 'vite-plugin-use-electron-test');
 const MOCK_ROOT_DIR = path.join(TEST_TEMP_DIR, 'mock-project');
 const MOCK_OUT_MAIN = path.join(MOCK_ROOT_DIR, 'out/main');
 const MOCK_OUT_PRELOAD = path.join(MOCK_ROOT_DIR, 'out/preload');
@@ -88,7 +87,7 @@ export default function SystemInfo() {
 
 // For the main handlers file
 const EXPECTED_HANDLERS_FILE = `
-/* vite-plugin-use-main - Main Process Handlers */
+/* vite-plugin-use-electron - Main Process Handlers */
 const { ipcMain } = require('electron');
 const os = require('node:os');
 
@@ -162,9 +161,9 @@ const functionImplementations = {
 
 // Setup the shared IPC handler
 function setupMainHandlers() {
-  console.log('[Main Process] Setting up handlers via ipc-use-main channel');
+  console.log('[Main Process] Setting up handlers via ipc-use-electron channel');
 
-  ipcMain.handle('ipc-use-main', async (_event, functionId, args) => {
+  ipcMain.handle('ipc-use-electron', async (_event, functionId, args) => {
     if (!functionId || typeof functionId !== 'string') {
       throw new Error('Invalid function ID');
     }
@@ -192,7 +191,7 @@ exports.setupMainHandlers = setupMainHandlers;
 
 // For the preload bridge file
 const EXPECTED_PRELOAD_BRIDGE = `
-/* vite-plugin-use-main - Preload Bridge API */
+/* vite-plugin-use-electron - Preload Bridge API */
 const { contextBridge, ipcRenderer } = require('electron');
 
 // Create API object with all main process functions
@@ -200,7 +199,7 @@ const mainApi = {
   // Bridge for addNumbers (src/renderer/src/main-operations.ts::addNumbers)
   addNumbers: async (a, b) => {
     try {
-      const result = await ipcRenderer.invoke('ipc-use-main', 'src/renderer/src/main-operations.ts::addNumbers', [a, b]);
+      const result = await ipcRenderer.invoke('ipc-use-electron', 'src/renderer/src/main-operations.ts::addNumbers', [a, b]);
       return result;
     } catch (error) {
       console.error('[Preload Bridge] Error in addNumbers:', error?.message || error);
@@ -211,7 +210,7 @@ const mainApi = {
   // Bridge for componentTestFunction (src/renderer/src/components/SystemInfo.tsx::componentTestFunction)
   componentTestFunction: async (message) => {
     try {
-      const result = await ipcRenderer.invoke('ipc-use-main', 'src/renderer/src/components/SystemInfo.tsx::componentTestFunction', [message]);
+      const result = await ipcRenderer.invoke('ipc-use-electron', 'src/renderer/src/components/SystemInfo.tsx::componentTestFunction', [message]);
       return result;
     } catch (error) {
       console.error('[Preload Bridge] Error in componentTestFunction:', error?.message || error);
@@ -222,7 +221,7 @@ const mainApi = {
   // Bridge for getOsInfo (src/renderer/src/main-operations.ts::getOsInfo)
   getOsInfo: async (detailLevel) => {
     try {
-      const result = await ipcRenderer.invoke('ipc-use-main', 'src/renderer/src/main-operations.ts::getOsInfo', [detailLevel]);
+      const result = await ipcRenderer.invoke('ipc-use-electron', 'src/renderer/src/main-operations.ts::getOsInfo', [detailLevel]);
       return result;
     } catch (error) {
       console.error('[Preload Bridge] Error in getOsInfo:', error?.message || error);
@@ -233,7 +232,7 @@ const mainApi = {
   // Bridge for riskyOperation (src/renderer/src/main-operations.ts::riskyOperation)
   riskyOperation: async (shouldFail) => {
     try {
-      const result = await ipcRenderer.invoke('ipc-use-main', 'src/renderer/src/main-operations.ts::riskyOperation', [shouldFail]);
+      const result = await ipcRenderer.invoke('ipc-use-electron', 'src/renderer/src/main-operations.ts::riskyOperation', [shouldFail]);
       return result;
     } catch (error) {
       console.error('[Preload Bridge] Error in riskyOperation:', error?.message || error);
@@ -244,7 +243,7 @@ const mainApi = {
   // Bridge for testMainFunction (src/renderer/src/main-operations.ts::testMainFunction)
   testMainFunction: async () => {
     try {
-      const result = await ipcRenderer.invoke('ipc-use-main', 'src/renderer/src/main-operations.ts::testMainFunction', []);
+      const result = await ipcRenderer.invoke('ipc-use-electron', 'src/renderer/src/main-operations.ts::testMainFunction', []);
       return result;
     } catch (error) {
       console.error('[Preload Bridge] Error in testMainFunction:', error?.message || error);
@@ -345,7 +344,7 @@ const mockManifest = {
   }
 };
 
-describe('vite-plugin-use-main plugin', () => {
+describe('vite-plugin-use-electron plugin', () => {
   let mockViteConfig: any;
   let mockPluginContext: any;
   
@@ -368,10 +367,10 @@ describe('vite-plugin-use-main plugin', () => {
     );
     
     // Create manifest
-    const manifestDir = path.join(MOCK_ROOT_DIR, 'node_modules/.vite-plugin-use-main');
+    const manifestDir = path.join(MOCK_ROOT_DIR, 'node_modules/.vite-plugin-use-electron');
     await fs.ensureDir(manifestDir);
     await fs.writeJson(
-      path.join(manifestDir, 'use-main-manifest.json'), 
+      path.join(manifestDir, 'use-electron-manifest.json'), 
       mockManifest, 
       { spaces: 2 }
     );
@@ -407,12 +406,14 @@ describe('vite-plugin-use-main plugin', () => {
       const plugin = useMainPlugin('main');
       
       // Configure the plugin
+      // @ts-expect-error
       plugin.configResolved(mockViteConfig);
       
       // Mock the plugin context
       Object.assign(plugin, mockPluginContext);
       
       // Call the generateBundle method
+      // @ts-expect-error
       await plugin.generateBundle(
         { dir: MOCK_OUT_MAIN }, 
         {}
@@ -452,12 +453,14 @@ describe('vite-plugin-use-main plugin', () => {
       const plugin = useMainPlugin('preload');
       
       // Configure the plugin
+      // @ts-expect-error
       plugin.configResolved(mockViteConfig);
       
       // Mock the plugin context
       Object.assign(plugin, mockPluginContext);
       
       // Call the generateBundle method
+      // @ts-expect-error
       await plugin.generateBundle(
         { dir: MOCK_OUT_PRELOAD }, 
         {}
@@ -497,7 +500,9 @@ describe('vite-plugin-use-main plugin', () => {
       const preloadPlugin = useMainPlugin('preload');
       
       // Configure the plugins
+      // @ts-expect-error
       mainPlugin.configResolved(mockViteConfig);
+      // @ts-expect-error
       preloadPlugin.configResolved(mockViteConfig);
       
       // Mock the plugin contexts
@@ -511,7 +516,9 @@ describe('vite-plugin-use-main plugin', () => {
       await fs.ensureDir(path.join(MOCK_ROOT_DIR, 'dist-electron/preload'));
       
       // Call the generateBundle methods
+      // @ts-expect-error
       await mainPlugin.generateBundle({ dir: MOCK_OUT_MAIN }, {});
+      // @ts-expect-error
       await preloadPlugin.generateBundle({ dir: MOCK_OUT_PRELOAD }, {});
       
       // Define all possible locations for generated files
@@ -560,14 +567,18 @@ describe('vite-plugin-use-main plugin', () => {
     it('should generate functioning handlers and bridge', async () => {
       // Create main plugin and generate handlers
       const mainPlugin = useMainPlugin('main');
+      // @ts-expect-error
       mainPlugin.configResolved(mockViteConfig);
       Object.assign(mainPlugin, mockPluginContext);
+      // @ts-expect-error
       await mainPlugin.generateBundle({ dir: MOCK_OUT_MAIN }, {});
       
       // Create preload plugin and generate bridge
       const preloadPlugin = useMainPlugin('preload');
+      // @ts-expect-error
       preloadPlugin.configResolved(mockViteConfig);
       Object.assign(preloadPlugin, mockPluginContext);
+      // @ts-expect-error
       await preloadPlugin.generateBundle({ dir: MOCK_OUT_PRELOAD }, {});
       
       // Check the generated files
@@ -592,7 +603,7 @@ describe('vite-plugin-use-main plugin', () => {
         expect(preloadBridgeContent).toContain('contextBridge.exposeInMainWorld');
         expect(preloadBridgeContent).toContain('mainApi');
       } else {
-        fail('Generated files not found');
+        throw new Error('Generated files not found');
       }
       
       // Mock the required electron API calls that would be made
@@ -600,11 +611,11 @@ describe('vite-plugin-use-main plugin', () => {
       const mockContextBridge = { exposeInMainWorld: vi.fn() };
       
       // Simulate the expected calls
-      mockIpcMain.handle('ipc-use-main', () => {});
+      mockIpcMain.handle('ipc-use-electron', () => {});
       mockContextBridge.exposeInMainWorld('mainApi', {});
       
       // Verify the mocks were called as expected
-      expect(mockIpcMain.handle).toHaveBeenCalledWith('ipc-use-main', expect.any(Function));
+      expect(mockIpcMain.handle).toHaveBeenCalledWith('ipc-use-electron', expect.any(Function));
       expect(mockContextBridge.exposeInMainWorld).toHaveBeenCalledWith('mainApi', expect.any(Object));
     });
   });

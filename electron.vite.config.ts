@@ -2,7 +2,7 @@ import { resolve } from 'path'
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import react from '@vitejs/plugin-react'
 // Import your plugin (adjust path if needed)
-import { useMainPlugin } from './vite-plugin-use-main' // <--- Make sure this path is correct
+import { useMainPlugin } from './vite-plugin-use-electron' // <--- Make sure this path is correct
 
 export default defineConfig({
   main: {

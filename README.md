@@ -1,6 +1,6 @@
 # Electron + Vite: "use electron" Demo
 
-This project is a **Proof-of-Concept (POC)** demonstrating a Vite plugin (`vite-plugin-use-main.ts`) that enables a developer experience similar to React Server Components or tRPC within an Electron + React + TypeScript application built with `electron-vite`.
+This project is a **Proof-of-Concept (POC)** demonstrating a Vite plugin (`vite-plugin-use-electron.ts`) that enables a developer experience similar to React Server Components or tRPC within an Electron + React + TypeScript application built with `electron-vite`.
 
 **The Core Idea:** Write functions directly within your React (renderer process) codebase, add a simple `"use electron";` directive at the top, and have them automatically execute in Electron's main process during runtime!
 
@@ -25,7 +25,7 @@ export async function getOsInfo(detailLevel: number) {
 This repository showcases:
 
 1.  **The `"use electron";` Directive:** A simple string literal that marks functions intended for main process execution.
-2.  **A Custom Vite Plugin (`vite-plugin-use-main.ts`):**
+2.  **A Custom Vite Plugin (`vite-plugin-use-electron.ts`):**
     *   Runs during the `build` process.
     *   Uses `@babel/parser` to analyze the code and find functions marked with `"use electron";`.
     *   **Extracts** the implementation of these functions.
@@ -51,7 +51,7 @@ This repository showcases:
 
 1.  Developer adds `"use electron";` to a function in the renderer codebase (e.g., `src/shared/main-operations.ts`).
 2.  During `npm run build`, the `useMainPlugin` (renderer target) parses the code.
-3.  The plugin identifies the function, extracts its body and signature, and stores this information in a temporary manifest (`node_modules/.vite-plugin-use-main/...`). It replaces the original function body in the renderer bundle.
+3.  The plugin identifies the function, extracts its body and signature, and stores this information in a temporary manifest (`node_modules/.vite-plugin-use-electron/...`). It replaces the original function body in the renderer bundle.
 4.  The `useMainPlugin` (preload target) reads the manifest and generates `_generated_preload_bridge.js`, creating async stub functions that use `ipcRenderer.invoke` to call the main process via a specific channel, using the function's unique ID.
 5.  The `useMainPlugin` (main target) reads the manifest and generates `_generated_main_handlers.js`. This file contains the *actual implementations* of the extracted functions and sets up `ipcMain.handle` listeners keyed by the function's unique ID.
 6.  The user's `src/preload/index.ts` `require`s the generated bridge, exposing the SDK stubs via `contextBridge.exposeInMainWorld('mainApi', ...)`.
@@ -105,7 +105,7 @@ This POC demonstrates calling the following functions defined in `src/shared/mai
 
 Key files involved in this mechanism:
 
-*   `vite-plugin-use-main.ts`: The heart of the build-time magic.
+*   `vite-plugin-use-electron.ts`: The heart of the build-time magic.
 *   `src/shared/main-operations.ts`: Where `"use electron"` functions are defined and exported. The `MainApi` type is also here.
 *   `electron.vite.config.ts`: Where the `useMainPlugin` is configured for all three targets.
 *   `src/main/index.ts`: Imports and calls `setupMainHandlers` from the generated file.

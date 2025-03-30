@@ -20,7 +20,7 @@ declare global {
 const api = {}
 
 // Define the IPC channel for emergency use
-const IPC_CHANNEL = 'ipc-use-main';
+const IPC_CHANNEL = 'ipc-use-electron';
 
 // Possible locations for the generated bridge file
 const possibleBridgePaths = [

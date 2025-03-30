@@ -3,10 +3,11 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import fs from 'fs'
-import path from 'path'
 
 // Setup main handlers - try to load the generated file
-let setupMainHandlers: () => void;
+let setupMainHandlers: () => void = () => {
+  console.warn('[Main Process] Default handler initialization - this should be overwritten');
+};
 
 // Possible locations for the generated handlers file
 const possibleHandlerPaths = [
@@ -39,7 +40,7 @@ if (!setupMainHandlers) {
   console.warn('[Main Process] No handlers loaded. Using emergency implementation.');
   setupMainHandlers = () => {
     console.warn('[Main Process] Emergency handlers in use - functions will return errors');
-    ipcMain.handle('ipc-use-main', async (_event, functionId) => {
+    ipcMain.handle('ipc-use-electron', async (_event, functionId) => {
       throw new Error(`No handler implemented for ${functionId}. Plugin may not have generated handlers correctly.`);
     });
   };

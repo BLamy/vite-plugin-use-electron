@@ -1,5 +1,5 @@
 {
-  "name": "use-main-electron-demo",
+  "name": "use-electron-electron-demo",
   "version": "1.0.0",
   "description": "An Electron application with React and TypeScript",
   "main": "./out/main/index.js",
@@ -12,9 +12,8 @@
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "start": "electron-vite preview",
-    "pregen": "node -e \"const fs=require('fs');const path=require('path');const dir='src/shared';const file=path.join(dir,'rpcTree.gen.ts');if(!fs.existsSync(dir))fs.mkdirSync(dir,{recursive:true});if(!fs.existsSync(file))fs.writeFileSync(file,'export interface MainApi{}')\";",
-    "dev": "npm run pregen && electron-vite dev",
-    "build": "npm run pregen && electron-vite build",
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",
     "build:win": "npm run build && electron-builder --win",

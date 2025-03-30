@@ -1,5 +1,5 @@
 
-/* vite-plugin-use-main - Main Process Handlers */
+/* vite-plugin-use-electron - Main Process Handlers */
 const { ipcMain } = require('electron');
 const os = require('node:os');
 
@@ -73,9 +73,9 @@ const functionImplementations = {
 
 // Setup the shared IPC handler
 function setupMainHandlers() {
-  console.log('[Main Process] Setting up handlers via ipc-use-main channel');
+  console.log('[Main Process] Setting up handlers via ipc-use-electron channel');
   
-  ipcMain.handle('ipc-use-main', async (_event, functionId, args) => {
+  ipcMain.handle('ipc-use-electron', async (_event, functionId, args) => {
     if (!functionId || typeof functionId !== 'string') {
       throw new Error('Invalid function ID');
     }

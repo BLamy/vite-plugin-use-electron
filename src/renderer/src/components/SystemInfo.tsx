@@ -2,7 +2,7 @@ import React from 'react'; // Import React if using JSX features like state/effe
 import { useQuery } from '@tanstack/react-query';
 
 // Import the functions directly
-import { getOsInfo } from '@renderer/main-operations';
+import { getOsInfo } from '@renderer/actions/main-operations';
 // Define the local function directly IF it's intended to be defined here
 async function componentTestFunction(message: string): Promise<string> {
     "use electron";

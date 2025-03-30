@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Versions from './components/Versions'
 import SystemInfo from './components/SystemInfo'
-import { addNumbers, riskyOperation, testMainFunction } from '@renderer/main-operations'
+import { addNumbers, riskyOperation, testMainFunction } from '@renderer/actions/main-operations'
 import electronLogo from './assets/electron.svg'
 
 function App(): JSX.Element {
@@ -34,7 +34,7 @@ function App(): JSX.Element {
   return (
     <div style={{ padding: '20px', maxWidth: '800px', margin: 'auto' }}>
       <img alt="logo" className="logo" src={electronLogo} style={{ height: '80px' }} />
-      <div className="creator">Powered by electron-vite & use-main plugin</div>
+      <div className="creator">Powered by electron-vite & use-electron plugin</div>
 
       <hr style={{ margin: '20px 0' }} />
 
