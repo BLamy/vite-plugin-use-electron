@@ -1,16 +1,13 @@
 {
-  "name": "vite-plugin-use-electron",
+  "name": "@electron-monorepo/vite-plugin-use-electron",
   "version": "1.0.0",
-  "description": "Vite plugin for seamless communication between Electron's main and renderer processes",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "files": [
-    "dist",
-    "README.md",
-    "LICENSE"
-  ],
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc",
+    "dev": "tsc --watch",
     "prepublishOnly": "npm run build",
     "test": "vitest",
     "typecheck": "tsc --noEmit",
@@ -50,9 +47,14 @@
     "@types/babel__core": "^7.20.5",
     "@types/babel__traverse": "^7.20.5",
     "@types/fs-extra": "^11.0.4",
-    "@types/node": "^22.13.14",
-    "typescript": "^5.8.2",
-    "vite": "^6.2.3",
-    "vitest": "^3.0.9"
-  }
+    "@types/node": "^22.0.0",
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0",
+    "vitest": "^1.0.0"
+  },
+  "workspaces": [
+    "electron-app",
+    "vite-plugin-use-electron"
+  ],
+  "private": true
 }

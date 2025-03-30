@@ -1,6 +1,9 @@
 # vite-plugin-use-electron
 
-A Vite plugin for seamless communication between Electron's main and renderer processes using directives.
+A Vite plugin for RSC inspired communication between Electron's main and renderer processes using directives.
+
+![img](./docs/usage-screenshot.png)
+
 
 ## Installation
 
