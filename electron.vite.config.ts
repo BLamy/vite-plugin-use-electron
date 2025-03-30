@@ -14,10 +14,10 @@ export default defineConfig({
       rollupOptions: {
         input: {
           index: resolve(__dirname, 'src/main/index.ts'),
-          shared: resolve(__dirname, 'src/shared/main-operations.ts')
         },
         output: {
           entryFileNames: '[name].js',
+          chunkFileNames: '[name].js',
           assetFileNames: '[name].[ext]'
         }
       },
@@ -33,6 +33,7 @@ export default defineConfig({
        rollupOptions: {
           output: {
               entryFileNames: '[name].js',
+              chunkFileNames: '[name].js',
               assetFileNames: '[name].[ext]',
           }
        },

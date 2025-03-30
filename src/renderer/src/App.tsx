@@ -1,20 +1,18 @@
 import { useState } from 'react'
 import Versions from './components/Versions'
 import SystemInfo from './components/SystemInfo'
-import { useMainApi } from './contexts/MainApiContext'
+import { addNumbers, riskyOperation, testMainFunction } from '@renderer/main-operations'
 import electronLogo from './assets/electron.svg'
 
 function App(): JSX.Element {
-  const { api: mainApi, isReady } = useMainApi()
   const [addResult, setAddResult] = useState<number | string>('N/A')
   const [riskResult, setRiskResult] = useState<string>('N/A')
   const [testResult, setTestResult] = useState<string>('N/A')
 
   const handleAdd = async (): Promise<void> => {
-    if (!mainApi) return
     try {
       setAddResult('Calculating...')
-      const result = await mainApi.addNumbers(15, 27)
+      const result = await addNumbers(15, 27)
       setAddResult(result)
     } catch (err: any) {
       setAddResult(`Error: ${err.message}`)
@@ -22,10 +20,9 @@ function App(): JSX.Element {
   }
 
   const handleRisk = async (fail: boolean): Promise<void> => {
-    if (!mainApi) return
-    try {
+      try {
       setRiskResult('Running...')
-      const result = await mainApi.riskyOperation(fail)
+      const result = await riskyOperation(fail)
       setRiskResult(`Success: ${result}`)
     } catch (err: any) {
       setRiskResult(`Error: ${err.message}`)
@@ -49,7 +46,7 @@ function App(): JSX.Element {
       {/* Demo for addNumbers */}
       <div>
         <h2>Add Numbers (Main Process):</h2>
-        <button onClick={handleAdd} disabled={!isReady}>
+        <button onClick={handleAdd}>
           Add 15 + 27
         </button>
         <p>Result: {addResult}</p>
@@ -60,10 +57,10 @@ function App(): JSX.Element {
       {/* Demo for riskyOperation */}
       <div>
         <h2>Risky Operation (Main Process):</h2>
-        <button onClick={() => handleRisk(false)} disabled={!isReady} style={{ marginRight: '10px' }}>
+        <button onClick={() => handleRisk(false)} style={{ marginRight: '10px' }}>
           Run (Success)
         </button>
-        <button onClick={() => handleRisk(true)} disabled={!isReady}>
+        <button onClick={() => handleRisk(true)}>
           Run (Fail)
         </button>
         <p>Result: {riskResult}</p>
@@ -76,16 +73,14 @@ function App(): JSX.Element {
         <h2>Test Main Function:</h2>
         <button 
           onClick={async () => {
-            if (!mainApi) return;
             try {
               setTestResult('Testing...');
-              const result = await mainApi.testMainFunction();
+              const result = await testMainFunction();
               setTestResult(result);
             } catch (err: any) {
               setTestResult(`Error: ${err.message}`);
             }
           }} 
-          disabled={!isReady}
         >
           Test Main Process
         </button>

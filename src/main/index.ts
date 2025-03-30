@@ -2,10 +2,48 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import fs from 'fs'
+import path from 'path'
 
-// Use require for the CJS generated file
-// Adjust path relative to the output directory (`dist-electron/main`)
-const { setupMainHandlers } = require('./_generated_main_handlers.js');
+// Setup main handlers - try to load the generated file
+let setupMainHandlers: () => void;
+
+// Possible locations for the generated handlers file
+const possibleHandlerPaths = [
+  join(__dirname, '_generated_main_handlers.js'),
+  join(process.cwd(), 'out/main/_generated_main_handlers.js'),
+  join(process.cwd(), 'dist/main/_generated_main_handlers.js'),
+  join(process.cwd(), 'dist-electron/main/_generated_main_handlers.js')
+];
+
+// Load handlers from the first available path
+for (const handlerPath of possibleHandlerPaths) {
+  try {
+    if (fs.existsSync(handlerPath)) {
+      console.log(`[Main Process] Loading handlers from: ${handlerPath}`);
+      const handlers = require(handlerPath);
+      
+      if (handlers && typeof handlers.setupMainHandlers === 'function') {
+        setupMainHandlers = handlers.setupMainHandlers;
+        console.log(`[Main Process] Successfully loaded handlers from: ${handlerPath}`);
+        break;
+      }
+    }
+  } catch (error) {
+    console.error(`[Main Process] Failed to load handlers from ${handlerPath}:`, error);
+  }
+}
+
+// If no handlers were loaded, provide a basic emergency handler
+if (!setupMainHandlers) {
+  console.warn('[Main Process] No handlers loaded. Using emergency implementation.');
+  setupMainHandlers = () => {
+    console.warn('[Main Process] Emergency handlers in use - functions will return errors');
+    ipcMain.handle('ipc-use-main', async (_event, functionId) => {
+      throw new Error(`No handler implemented for ${functionId}. Plugin may not have generated handlers correctly.`);
+    });
+  };
+}
 
 function createWindow(): void {
   // Create the browser window.

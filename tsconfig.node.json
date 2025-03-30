@@ -7,7 +7,7 @@
     "src/shared/**/*",
     "vite-plugin-use-main.ts", // <--- Add: Include your plugin file (adjust path if not in root)
     "tests/**/*.ts"            // <--- Add: Include test files (adjust pattern if needed)
-  ],
+   ],
   "compilerOptions": {
     "composite": true,
     "baseUrl": ".",

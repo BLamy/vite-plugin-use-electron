@@ -3,7 +3,7 @@ import type { MainApi } from '@shared/rpcTree.gen'
 
 declare global {
   interface Window {
-    mainApi: MainApi
+    mainApi?: MainApi
     electron: ElectronAPI
     api: unknown
   }

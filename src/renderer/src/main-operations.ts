@@ -1,4 +1,7 @@
 import os from 'node:os';
+// Import statement is not needed in renderer process code
+// since the "use main" directive makes this run in main process
+// where the Node.js modules are available
 
 /**
  * Gets basic OS information.
