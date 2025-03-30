@@ -4,7 +4,9 @@ const path = require("path");
 const utils = require("@electron-toolkit/utils");
 const fs = require("fs");
 const icon = path.join(__dirname, "../../resources/icon.png");
-let setupMainHandlers;
+let setupMainHandlers = () => {
+  console.warn("[Main Process] Default handler initialization - this should be overwritten");
+};
 const possibleHandlerPaths = [
   path.join(__dirname, "_generated_main_handlers.js"),
   path.join(process.cwd(), "out/main/_generated_main_handlers.js"),
