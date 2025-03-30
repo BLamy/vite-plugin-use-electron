@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import fs from 'fs-extra';
 import path from 'path';
-import { useMainPlugin } from '../vite-plugin-use-electron';
+import { useElectronMainPlugin } from '../vite-plugin-use-electron';
 import os from 'os';
 
 // Constants
@@ -403,7 +403,7 @@ describe('vite-plugin-use-electron plugin', () => {
   describe('generateBundle method', () => {
     it('should create a main handlers file matching the expected format', async () => {
       // Create plugin instance
-      const plugin = useMainPlugin('main');
+      const plugin = useElectronMainPlugin('main');
       
       // Configure the plugin
       // @ts-expect-error
@@ -450,7 +450,7 @@ describe('vite-plugin-use-electron plugin', () => {
     
     it('should create a preload bridge file matching the expected format', async () => {
       // Create plugin instance
-      const plugin = useMainPlugin('preload');
+      const plugin = useElectronMainPlugin('preload');
       
       // Configure the plugin
       // @ts-expect-error
@@ -496,8 +496,8 @@ describe('vite-plugin-use-electron plugin', () => {
     
     it('should correctly write files to all expected directories', async () => {
       // Create plugin instances
-      const mainPlugin = useMainPlugin('main');
-      const preloadPlugin = useMainPlugin('preload');
+      const mainPlugin = useElectronMainPlugin('main');
+      const preloadPlugin = useElectronMainPlugin('preload');
       
       // Configure the plugins
       // @ts-expect-error
@@ -566,7 +566,7 @@ describe('vite-plugin-use-electron plugin', () => {
   describe('integration tests', () => {
     it('should generate functioning handlers and bridge', async () => {
       // Create main plugin and generate handlers
-      const mainPlugin = useMainPlugin('main');
+      const mainPlugin = useElectronMainPlugin('main');
       // @ts-expect-error
       mainPlugin.configResolved(mockViteConfig);
       Object.assign(mainPlugin, mockPluginContext);
@@ -574,7 +574,7 @@ describe('vite-plugin-use-electron plugin', () => {
       await mainPlugin.generateBundle({ dir: MOCK_OUT_MAIN }, {});
       
       // Create preload plugin and generate bridge
-      const preloadPlugin = useMainPlugin('preload');
+      const preloadPlugin = useElectronMainPlugin('preload');
       // @ts-expect-error
       preloadPlugin.configResolved(mockViteConfig);
       Object.assign(preloadPlugin, mockPluginContext);

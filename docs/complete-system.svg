@@ -1,0 +1,168 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 700">
+  <!-- Background -->
+  <rect width="900" height="700" fill="#f8f9fa" rx="10" ry="10" />
+  
+  <!-- Title -->
+  <text x="450" y="35" font-family="Arial" font-size="24" text-anchor="middle" font-weight="bold">vite-plugin-use-electron: System Architecture</text>
+  
+  <!-- Development Section -->
+  <rect x="50" y="60" width="800" height="250" fill="#e3f2fd" stroke="#2196f3" stroke-width="2" rx="10" ry="10" />
+  <text x="450" y="85" font-family="Arial" font-size="18" text-anchor="middle" font-weight="bold">Build Phase</text>
+  
+  <!-- Source Code Box -->
+  <rect x="75" y="100" width="200" height="180" fill="white" stroke="#2196f3" stroke-width="1" rx="5" ry="5" />
+  <text x="175" y="120" font-family="Arial" font-size="14" text-anchor="middle" font-weight="bold">Source Code</text>
+  <rect x="85" y="130" width="180" height="140" fill="#f1f8e9" stroke="#8bc34a" stroke-width="1" rx="3" ry="3" />
+  <text x="175" y="150" font-family="Courier New" font-size="10" text-anchor="middle">export async function</text>
+  <text x="175" y="165" font-family="Courier New" font-size="10" text-anchor="middle">getOsInfo() {</text>
+  <text x="175" y="180" font-family="Courier New" font-size="10" text-anchor="middle" fill="#d32f2f">"use electron";</text>
+  <text x="175" y="195" font-family="Courier New" font-size="10" text-anchor="middle">return {</text>
+  <text x="175" y="210" font-family="Courier New" font-size="10" text-anchor="middle">  platform: os.platform(),</text>
+  <text x="175" y="225" font-family="Courier New" font-size="10" text-anchor="middle">  version: os.release()</text>
+  <text x="175" y="240" font-family="Courier New" font-size="10" text-anchor="middle">};</text>
+  <text x="175" y="255" font-family="Courier New" font-size="10" text-anchor="middle">}</text>
+  
+  <!-- Plugin Processing Box -->
+  <rect x="350" y="100" width="200" height="180" fill="white" stroke="#2196f3" stroke-width="1" rx="5" ry="5" />
+  <text x="450" y="120" font-family="Arial" font-size="14" text-anchor="middle" font-weight="bold">Plugin Processing</text>
+  <rect x="360" y="130" width="180" height="140" fill="#e8eaf6" stroke="#3f51b5" stroke-width="1" rx="3" ry="3" />
+  <text x="450" y="145" font-family="Arial" font-size="10" text-anchor="middle">1. AST Construction</text>
+  <text x="450" y="160" font-family="Arial" font-size="10" text-anchor="middle">2. Directive Identification</text>
+  <text x="450" y="175" font-family="Arial" font-size="10" text-anchor="middle">3. Function Metadata Extraction</text>
+  <text x="450" y="190" font-family="Arial" font-size="10" text-anchor="middle">4. Manifest Generation</text>
+  <text x="450" y="205" font-family="Arial" font-size="10" text-anchor="middle">5. Function Body Transformation</text>
+  <text x="450" y="220" font-family="Arial" font-size="10" text-anchor="middle">6. Output Module Generation</text>
+  <text x="450" y="235" font-family="Arial" font-size="10" text-anchor="middle">7. Type Definition Generation</text>
+  <text x="450" y="250" font-family="Arial" font-size="10" text-anchor="middle">8. Artifact Emission</text>
+  
+  <!-- Generated Files Box -->
+  <rect x="625" y="100" width="200" height="180" fill="white" stroke="#2196f3" stroke-width="1" rx="5" ry="5" />
+  <text x="725" y="120" font-family="Arial" font-size="14" text-anchor="middle" font-weight="bold">Generated Artifacts</text>
+  
+  <!-- Renderer Output -->
+  <rect x="635" y="130" width="180" height="40" fill="#e8eaf6" stroke="#3f51b5" stroke-width="1" rx="3" ry="3" />
+  <text x="725" y="145" font-family="Arial" font-size="10" text-anchor="middle">Transformed Renderer Code</text>
+  <text x="725" y="160" font-family="Arial" font-size="8" text-anchor="middle">(with RPC delegation)</text>
+  
+  <!-- Preload Output -->
+  <rect x="635" y="175" width="180" height="40" fill="#e8eaf6" stroke="#3f51b5" stroke-width="1" rx="3" ry="3" />
+  <text x="725" y="190" font-family="Arial" font-size="10" text-anchor="middle">Preload Bridge Module</text>
+  <text x="725" y="205" font-family="Arial" font-size="8" text-anchor="middle">(_generated_preload_bridge.js)</text>
+  
+  <!-- Main Output -->
+  <rect x="635" y="220" width="180" height="40" fill="#e8eaf6" stroke="#3f51b5" stroke-width="1" rx="3" ry="3" />
+  <text x="725" y="235" font-family="Arial" font-size="10" text-anchor="middle">Main Process Handler Module</text>
+  <text x="725" y="250" font-family="Arial" font-size="8" text-anchor="middle">(_generated_main_handlers.js)</text>
+  
+  <!-- Arrows for Build Time -->
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+    </marker>
+  </defs>
+  <line x1="275" y1="180" x2="350" y2="180" stroke="#333" stroke-width="2" marker-end="url(#arrow)" />
+  <line x1="550" y1="180" x2="625" y2="180" stroke="#333" stroke-width="2" marker-end="url(#arrow)" />
+  
+  <!-- Runtime Section -->
+  <rect x="50" y="330" width="800" height="350" fill="#fff3e0" stroke="#ff9800" stroke-width="2" rx="10" ry="10" />
+  <text x="450" y="355" font-family="Arial" font-size="18" text-anchor="middle" font-weight="bold">Execution Phase</text>
+  
+  <!-- Renderer Process Box -->
+  <rect x="75" y="370" width="200" height="290" fill="white" stroke="#ff9800" stroke-width="1" rx="5" ry="5" />
+  <text x="175" y="390" font-family="Arial" font-size="14" text-anchor="middle" font-weight="bold">Renderer Process</text>
+  
+  <!-- App Code -->
+  <rect x="85" y="400" width="180" height="70" fill="#f1f8e9" stroke="#8bc34a" stroke-width="1" rx="3" ry="3" />
+  <text x="175" y="415" font-family="Arial" font-size="10" text-anchor="middle">Application Code</text>
+  <text x="175" y="430" font-family="Courier New" font-size="10" text-anchor="middle">const info = await</text>
+  <text x="175" y="445" font-family="Courier New" font-size="10" text-anchor="middle">getOsInfo();</text>
+  <text x="175" y="460" font-family="Courier New" font-size="10" text-anchor="middle">console.log(info);</text>
+  
+  <!-- Transformed Function -->
+  <rect x="85" y="480" width="180" height="80" fill="#e8eaf6" stroke="#3f51b5" stroke-width="1" rx="3" ry="3" />
+  <text x="175" y="495" font-family="Arial" font-size="10" text-anchor="middle">Transformed Function</text>
+  <text x="175" y="510" font-family="Courier New" font-size="10" text-anchor="middle">async function getOsInfo() {</text>
+  <text x="175" y="525" font-family="Courier New" font-size="10" text-anchor="middle">  return await</text>
+  <text x="175" y="540" font-family="Courier New" font-size="10" text-anchor="middle">  __electron_rpc_call(</text>
+  <text x="175" y="555" font-family="Courier New" font-size="10" text-anchor="middle">    "file::getOsInfo", []);</text>
+  
+  <!-- RPC Bridge -->
+  <rect x="85" y="570" width="180" height="70" fill="#e0f2f1" stroke="#009688" stroke-width="1" rx="3" ry="3" />
+  <text x="175" y="585" font-family="Arial" font-size="10" text-anchor="middle">RPC Bridge Function</text>
+  <text x="175" y="600" font-family="Courier New" font-size="10" text-anchor="middle">async function</text>
+  <text x="175" y="615" font-family="Courier New" font-size="10" text-anchor="middle">__electron_rpc_call(id, args) {</text>
+  <text x="175" y="630" font-family="Courier New" font-size="10" text-anchor="middle">  return window.mainApi[name];</text>
+  
+  <!-- Preload Script Box -->
+  <rect x="350" y="370" width="200" height="290" fill="white" stroke="#ff9800" stroke-width="1" rx="5" ry="5" />
+  <text x="450" y="390" font-family="Arial" font-size="14" text-anchor="middle" font-weight="bold">Preload Script</text>
+  
+  <!-- Context Bridge -->
+  <rect x="360" y="400" width="180" height="70" fill="#e0f2f1" stroke="#009688" stroke-width="1" rx="3" ry="3" />
+  <text x="450" y="415" font-family="Arial" font-size="10" text-anchor="middle">Context Bridge</text>
+  <text x="450" y="430" font-family="Courier New" font-size="10" text-anchor="middle">contextBridge</text>
+  <text x="450" y="445" font-family="Courier New" font-size="10" text-anchor="middle">.exposeInMainWorld(</text>
+  <text x="450" y="460" font-family="Courier New" font-size="10" text-anchor="middle">  'mainApi', mainApi);</text>
+  
+  <!-- Main API Object -->
+  <rect x="360" y="480" width="180" height="100" fill="#e8eaf6" stroke="#3f51b5" stroke-width="1" rx="3" ry="3" />
+  <text x="450" y="495" font-family="Arial" font-size="10" text-anchor="middle">mainApi Object</text>
+  <text x="450" y="510" font-family="Courier New" font-size="10" text-anchor="middle">const mainApi = {</text>
+  <text x="450" y="525" font-family="Courier New" font-size="10" text-anchor="middle">  getOsInfo: async () => {</text>
+  <text x="450" y="540" font-family="Courier New" font-size="10" text-anchor="middle">    return await</text>
+  <text x="450" y="555" font-family="Courier New" font-size="10" text-anchor="middle">    ipcRenderer.invoke(</text>
+  <text x="450" y="570" font-family="Courier New" font-size="10" text-anchor="middle">      'ipc-use-electron',</text>
+  <text x="450" y="585" font-family="Courier New" font-size="10" text-anchor="middle">      'file::getOsInfo', []);</text>
+  
+  <!-- IPC Communication -->
+  <rect x="360" y="590" width="180" height="50" fill="#fce4ec" stroke="#e91e63" stroke-width="1" rx="3" ry="3" />
+  <text x="450" y="605" font-family="Arial" font-size="10" text-anchor="middle">IPC Communication</text>
+  <text x="450" y="620" font-family="Courier New" font-size="10" text-anchor="middle">ipcRenderer.invoke(</text>
+  <text x="450" y="635" font-family="Courier New" font-size="10" text-anchor="middle">  channel, functionId, args);</text>
+  
+  <!-- Main Process Box -->
+  <rect x="625" y="370" width="200" height="290" fill="white" stroke="#ff9800" stroke-width="1" rx="5" ry="5" />
+  <text x="725" y="390" font-family="Arial" font-size="14" text-anchor="middle" font-weight="bold">Main Process</text>
+  
+  <!-- IPC Handler -->
+  <rect x="635" y="400" width="180" height="70" fill="#fce4ec" stroke="#e91e63" stroke-width="1" rx="3" ry="3" />
+  <text x="725" y="415" font-family="Arial" font-size="10" text-anchor="middle">IPC Handler</text>
+  <text x="725" y="430" font-family="Courier New" font-size="10" text-anchor="middle">ipcMain.handle(</text>
+  <text x="725" y="445" font-family="Courier New" font-size="10" text-anchor="middle">  'ipc-use-electron',</text>
+  <text x="725" y="460" font-family="Courier New" font-size="10" text-anchor="middle">  handleFunction);</text>
+  
+  <!-- Function Implementations -->
+  <rect x="635" y="480" width="180" height="100" fill="#e8eaf6" stroke="#3f51b5" stroke-width="1" rx="3" ry="3" />
+  <text x="725" y="495" font-family="Arial" font-size="10" text-anchor="middle">Function Implementations</text>
+  <text x="725" y="510" font-family="Courier New" font-size="10" text-anchor="middle">const functions = {</text>
+  <text x="725" y="525" font-family="Courier New" font-size="10" text-anchor="middle">  'file::getOsInfo':</text>
+  <text x="725" y="540" font-family="Courier New" font-size="10" text-anchor="middle">  async function() {</text>
+  <text x="725" y="555" font-family="Courier New" font-size="10" text-anchor="middle">    return {</text>
+  <text x="725" y="570" font-family="Courier New" font-size="10" text-anchor="middle">      platform: os.platform(),</text>
+  <text x="725" y="585" font-family="Courier New" font-size="10" text-anchor="middle">      version: os.release()</text>
+  
+  <!-- Original Function Body -->
+  <rect x="635" y="590" width="180" height="50" fill="#f1f8e9" stroke="#8bc34a" stroke-width="1" rx="3" ry="3" />
+  <text x="725" y="605" font-family="Arial" font-size="10" text-anchor="middle">Extracted Function Body</text>
+  <text x="725" y="620" font-family="Courier New" font-size="10" text-anchor="middle">(with type annotations</text>
+  <text x="725" y="635" font-family="Courier New" font-size="10" text-anchor="middle">removed for execution)</text>
+  
+  <!-- Runtime Flow Arrows -->
+  <line x1="175" y1="470" x2="175" y2="480" stroke="#333" stroke-width="2" marker-end="url(#arrow)" />
+  <line x1="175" y1="560" x2="175" y2="570" stroke="#333" stroke-width="2" marker-end="url(#arrow)" />
+  
+  <path d="M 265 520 C 310 520, 310 515, 350 515" fill="none" stroke="#333" stroke-width="2" marker-end="url(#arrow)" />
+  <text x="300" y="505" font-family="Arial" font-size="9" text-anchor="middle">1. Access mainApi method</text>
+  
+  <path d="M 540 620 C 585 620, 585 435, 625 435" fill="none" stroke="#333" stroke-width="2" marker-end="url(#arrow)" />
+  <text x="590" y="620" font-family="Arial" font-size="9" text-anchor="middle">2. IPC Invocation</text>
+  
+  <path d="M 725 470 C 725 480, 725 480, 725 480" fill="none" stroke="#333" stroke-width="2" marker-end="url(#arrow)" />
+  <text x="765" y="480" font-family="Arial" font-size="9" text-anchor="middle">3. Function Resolution</text>
+  
+  <path d="M 635 540 C 585 540, 585 550, 540 550" fill="none" stroke="#333" stroke-width="2" marker-end="url(#arrow)" stroke-dasharray="5,5" />
+  <text x="590" y="535" font-family="Arial" font-size="9" text-anchor="middle">4. Response Transmission</text>
+  
+  <path d="M 350 550 C 310 550, 310 540, 265 540" fill="none" stroke="#333" stroke-width="2" marker-end="url(#arrow)" stroke-dasharray="5,5" />
+  <text x="310" y="565" font-family="Arial" font-size="9" text-anchor="middle">5. Promise Resolution</text>
+</svg>

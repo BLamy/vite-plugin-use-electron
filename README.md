@@ -1,137 +1,432 @@
-# Electron + Vite: "use electron" Demo
+# vite-plugin-use-electron
 
-This project is a **Proof-of-Concept (POC)** demonstrating a Vite plugin (`vite-plugin-use-electron.ts`) that enables a developer experience similar to React Server Components or tRPC within an Electron + React + TypeScript application built with `electron-vite`.
+A Vite plugin for seamless communication between Electron's main and renderer processes using directives.
 
-**The Core Idea:** Write functions directly within your React (renderer process) codebase, add a simple `"use electron";` directive at the top, and have them automatically execute in Electron's main process during runtime!
+## Installation
 
-```typescript
-// Example: src/shared/main-operations.ts
-
-import os from 'node:os'; // This import works because the code runs in main!
-
-export async function getOsInfo(detailLevel: number) {
-  "use electron"; // Magic happens here! ✨
-
-  // This code actually executes in the Electron main process
-  console.log(`[Main Process: getOsInfo] Received detailLevel: ${detailLevel}`);
-  await new Promise(resolve => setTimeout(resolve, 50));
-  // ... access node APIs like os ...
-  return { platform: os.platform(), arch: os.arch(), /* ... */ };
-}
+```bash
+npm install vite-plugin-use-electron --save-dev
 ```
 
-## What is this Demoing?
+## Features
 
-This repository showcases:
+- Seamlessly call Electron main process functions from the renderer process
+- TypeScript support with automatic type generation
+- Secure communication through Electron's contextBridge
+- Simple directive-based API
+- Works with Vite and Electron-Vite
 
-1.  **The `"use electron";` Directive:** A simple string literal that marks functions intended for main process execution.
-2.  **A Custom Vite Plugin (`vite-plugin-use-electron.ts`):**
-    *   Runs during the `build` process.
-    *   Uses `@babel/parser` to analyze the code and find functions marked with `"use electron";`.
-    *   **Extracts** the implementation of these functions.
-    *   **Generates a separate bundle** (`_generated_main_handlers.js`) containing the actual function logic and IPC handlers (`ipcMain.handle`) for the main process.
-    *   **Generates an SDK** (`_generated_preload_bridge.js`) containing "stub" functions for the preload script. These stubs use `ipcRenderer.invoke` to call the main process.
-    *   **Replaces** the original function body in the renderer bundle with a placeholder (or error).
-3.  **Automatic IPC Setup:** The generated files handle the `ipcMain`/`ipcRenderer` communication boilerplate.
-4.  **Preload Script Integration:** The SDK is securely exposed to the renderer via `contextBridge` in the preload script (`src/preload/index.ts`).
-5.  **React Context Integration:** A React Context (`src/renderer/src/contexts/MainApiContext.tsx`) makes the main process SDK available conveniently via the `useMainApi` hook.
-6.  **Type Safety:** Uses TypeScript interfaces (`src/shared/main-operations.ts`) shared between preload and renderer contexts to provide type checking for the exposed main process functions.
-7.  **Demo Components:** (`App.tsx`, `SystemInfo.tsx`) show how to call these functions seamlessly using `async/await` or tools like TanStack Query.
+## Usage
 
-## Why is this Cool / Useful? (The Value Proposition)
+### Setup
 
-*   **Simplified IPC:** Drastically reduces the manual boilerplate needed to set up communication between the renderer and main processes for specific tasks. Define the function, add the directive, and call it.
-*   **Code Colocation:** Keep functions logically related to your UI components within the renderer source tree, even if they need main process capabilities.
-*   **Clear Separation:** The `"use electron";` directive explicitly marks code that will run with Node.js privileges, improving code clarity and security reviews.
-*   **Seamless Node.js Access:** Easily write functions that interact with the filesystem (`fs`), OS (`os`), child processes, native Node modules, or perform heavy computations without blocking the UI thread.
-*   **Type Safety:** By defining a shared interface, you get type checking and autocompletion when calling main process functions from the renderer.
-*   **Developer Experience:** Aims for a smoother workflow, potentially reducing context switching compared to manually managing separate IPC channels for every operation.
+1. Configure in your Vite config file:
 
-## How it Works (High-Level Flow)
+```typescript
+// vite.config.ts or electron.vite.config.ts
+import { defineConfig } from 'vite'
+import { useElectronMainPlugin } from 'vite-plugin-use-electron'
 
-1.  Developer adds `"use electron";` to a function in the renderer codebase (e.g., `src/shared/main-operations.ts`).
-2.  During `npm run build`, the `useMainPlugin` (renderer target) parses the code.
-3.  The plugin identifies the function, extracts its body and signature, and stores this information in a temporary manifest (`node_modules/.vite-plugin-use-electron/...`). It replaces the original function body in the renderer bundle.
-4.  The `useMainPlugin` (preload target) reads the manifest and generates `_generated_preload_bridge.js`, creating async stub functions that use `ipcRenderer.invoke` to call the main process via a specific channel, using the function's unique ID.
-5.  The `useMainPlugin` (main target) reads the manifest and generates `_generated_main_handlers.js`. This file contains the *actual implementations* of the extracted functions and sets up `ipcMain.handle` listeners keyed by the function's unique ID.
-6.  The user's `src/preload/index.ts` `require`s the generated bridge, exposing the SDK stubs via `contextBridge.exposeInMainWorld('mainApi', ...)`.
-7.  The user's `src/main/index.ts` `require`s the generated handlers and calls `setupMainHandlers()` to activate the IPC listeners.
-8.  In the React app, `MainApiProvider` gets `window.mainApi` and provides it via context.
-9.  Components use the `useMainApi` hook and call functions (e.g., `mainApi.getOsInfo()`).
-10. The call goes through the preload bridge -> IPC -> main process handler -> executes the original function body -> returns the result via IPC -> back to the renderer component.
+export default defineConfig({
+  main: {
+    plugins: [
+      useElectronMainPlugin('main'),
+      // other plugins...
+    ]
+  },
+  preload: {
+    plugins: [
+      useElectronMainPlugin('preload'),
+      // other plugins...
+    ]
+  },
+  renderer: {
+    plugins: [
+      useElectronMainPlugin('renderer', {
+        generateTypes: true // optional: generate TypeScript definitions
+      }),
+      // other plugins...
+    ]
+  }
+})
+```
 
-## Demo Features
+2. Set up the main process handler in your main process entry file:
 
-This POC demonstrates calling the following functions defined in `src/shared/main-operations.ts` from the React UI:
+```typescript
+// main/index.ts
+import { app, BrowserWindow } from 'electron'
+import { setupMainHandlers } from '../.vite-plugin-use-electron/_generated_main_handlers.js'
 
-*   `getOsInfo(detailLevel)`: Fetches OS details using Node's `os` module (demonstrates Node API access). Used with TanStack Query in `SystemInfo.tsx`.
-*   `addNumbers(a, b)`: A simple synchronous calculation performed in the main process (becomes async when called).
-*   `riskyOperation(shouldFail)`: Shows how errors thrown in the main process function are correctly propagated back to the renderer's `catch` block.
-*   `testMainFunction()`: Example function demonstrating usage.
+app.whenReady().then(() => {
+  // Set up the IPC handlers
+  setupMainHandlers()
+  
+  // Create window and other setup...
+})
+```
 
-## Getting Started
+3. Ensure your preload script includes the bridge:
 
-1.  **Clone the repository:**
-    ```bash
-    git clone <your-repo-url>
-    cd <repo-name>
-    ```
-2.  **Install dependencies:**
-    ```bash
-    npm install
-    # or yarn install / pnpm install
-    ```
-3.  **Build the application:**
-    ```bash
-    npm run build
-    ```
-    **Important:** The `useMainPlugin` currently only runs during the `build` command (`apply: 'build'`). The code splitting and generation happen here.
+```typescript
+// preload/index.ts
+import '../.vite-plugin-use-electron/_generated_preload_bridge.js'
+```
 
-4.  **Run the built application:**
-    The standard `electron-vite` preview command works well for launching the built app:
-    ```bash
-    npm start
-    # or yarn start / pnpm start
-    ```
-    This command points to the output in the `out/` directory.
+### Write main process functions
 
-5.  **Observe:**
-    *   The UI should display OS info fetched from the main process.
-    *   Click the buttons to trigger `addNumbers` and `riskyOperation`.
-    *   Check the **terminal where you ran `npm start`** to see the `[Main Process: ...]` logs.
-    *   Check the **Renderer DevTools** (press F12) console for `[Preload Bridge]` logs.
+Create functions in your renderer code that will run in the main process:
 
-## Under the Hood
+```typescript
+// renderer/src/YourComponent.tsx
+function getSystemInfo() {
+  "use electron" // This directive marks the function to run in main process
+  
+  const osInfo = require('os')
+  return {
+    platform: osInfo.platform(),
+    arch: osInfo.arch(),
+    cpus: osInfo.cpus().length,
+    memory: osInfo.totalmem()
+  }
+}
 
-Key files involved in this mechanism:
+// You can then call this function normally in your component:
+const systemInfo = await getSystemInfo()
+console.log(systemInfo.platform) // Logs the platform from the main process
+```
 
-*   `vite-plugin-use-electron.ts`: The heart of the build-time magic.
-*   `src/shared/main-operations.ts`: Where `"use electron"` functions are defined and exported. The `MainApi` type is also here.
-*   `electron.vite.config.ts`: Where the `useMainPlugin` is configured for all three targets.
-*   `src/main/index.ts`: Imports and calls `setupMainHandlers` from the generated file.
-*   `src/preload/index.ts`: Imports the generated preload bridge (`require('./_generated_preload_bridge.js')`).
-*   `src/renderer/src/contexts/MainApiContext.tsx`: Provides the `window.mainApi` to the React component tree.
-*   `src/renderer/src/App.tsx` & `src/renderer/src/components/SystemInfo.tsx`: Example usage of the `useMainApi` hook.
+## Options
 
-## Limitations & Caveats (POC Status)
+The plugin accepts the following options:
 
-*   **Build Only:** Does not currently work with the development server (`npm run dev`). HMR integration is complex.
-*   **Dependencies:** Code inside `"use electron"` functions **cannot** easily `import`/`require` modules from the renderer source tree. It executes within the context of the generated main process handlers file. Only Node.js built-ins and dependencies installed for the *main process* are reliably available.
-*   **Serialization:** All arguments passed to and results returned from `"use electron"` functions must be serializable via the Electron IPC mechanism (generally JSON-compatible). Complex classes, functions, etc., will not transfer correctly.
-*   **Error Handling:** Basic error propagation exists, but more robust application-level error handling patterns are needed for production.
-*   **`this` Context:** The `this` context is **not** preserved when functions are moved to the main process. Avoid using `this` within `"use electron"` functions.
-*   **Type Safety:** Relies on manually keeping the shared `MainApi` interface (`src/shared/main-operations.ts`) in sync with the actual exported `"use electron"` functions.
-*   **Experimental:** This is a proof-of-concept and has not been battle-tested. Use with caution.
-
-## Future Ideas
-
-*   Support for `npm run dev` / HMR.
-*   Automatic dependency analysis and bundling for `"use electron"` functions.
-*   Generating TypeScript types automatically instead of manual interfaces.
-*   Configuration options for the plugin.
-*   More sophisticated error handling and serialization strategies.
+```typescript
+interface useElectronMainPluginOptions {
+  // Generate TypeScript definitions (default: false)
+  generateTypes?: boolean;
+  
+  // The directive keyword to use (default: 'use electron')
+  directiveKeyword?: 'use electron' | 'use electron-main' | 'use main';
+}
+```
 
 ## License
 
 MIT
+
+
+
+# Technical Details
+
+# vite-plugin-use-electron: Technical Overview
+
+## Introduction
+
+This document provides a technical overview of the vite-plugin-use-electron, a Vite plugin that facilitates inter-process communication in Electron applications through directive-based function execution.
+![img](./docs/complete-system.svg)
+
+
+## Problem Context
+
+Electron applications operate within a multi-process architecture consisting of a main process with full Node.js capabilities and a renderer process with limited system access. Communication between these processes traditionally requires explicit inter-process communication (IPC) mechanisms, resulting in distributed implementation across multiple files and potential inconsistencies in type definitions.
+
+## Technical Approach
+
+The plugin operates by identifying functions marked with the directive `"use electron"`, extracting their implementation for execution in the main process, and replacing their renderer-side implementation with remote procedure call (RPC) stubs. This architecture enables a code structure where system-level functions appear to be defined in the renderer context but execute in the main process environment.
+
+## Implementation
+
+### Function Definition Syntax
+
+The plugin identifies functions for interprocess execution through a string directive:
+
+```typescript
+export async function getOsInfo(detailLevel: number): Promise<{ platform: string; arch: string; hostname?: string }> {
+    "use electron"; // Process directive
+    const platform = os.platform();
+    const arch = os.arch();
+    let hostname: string | undefined;
+    if (detailLevel > 0) {
+        hostname = os.hostname();
+    }
+    return { platform, arch, hostname };
+}
 ```
+
+This syntactic approach integrates with existing JavaScript language features for function directives while maintaining compatibility with TypeScript type checking.
+
+### Runtime Process Flow
+```mermaid
+sequenceDiagram
+    participant UI as User Interface
+    participant RP as Renderer Process
+    participant PS as Preload Script
+    participant MP as Main Process
+    
+    UI->>RP: Call getOsInfo(1)
+    RP->>RP: Execute transformed function stub
+    RP->>PS: Access window.mainApi.getOsInfo(1)
+    PS->>MP: ipcRenderer.invoke('ipc-use-electron', 'getOsInfo', [1])
+    MP->>MP: Execute original function body
+    MP->>MP: Generate response object
+    MP-->>PS: Return result via IPC channel
+    PS-->>RP: Return Promise resolution
+    RP-->>UI: Return function result
+```
+
+
+
+## Technical Architecture
+
+### Plugin Components
+```mermaid
+flowchart TD
+    A[useMainPlugin] -->|instantiates| B1[renderer plugin]
+    A -->|instantiates| B2[preload plugin]
+    A -->|instantiates| B3[main plugin]
+    
+    B1 -->|transform hook| C1[AST Parsing]
+    C1 -->|traverse| D1[Identify directive functions]
+    D1 -->|process| E1[Extract function metadata]
+    E1 -->|persist| F1[Function registry]
+    E1 -->|transform| G1[Replace function implementation]
+    
+    F1 -->|generateBundle| H1[Persist manifest]
+    H1 -->|optional| I1[Generate type definitions]
+    
+    B2 -->|generateBundle| C2[Load manifest]
+    C2 -->|process| D2[Generate preload bridge]
+    D2 -->|implement| E2[contextBridge interface]
+    
+    B3 -->|generateBundle| C3[Load manifest]
+    C3 -->|process| D3[Generate main handlers]
+    D3 -->|implement| E3[ipcMain handlers]
+```
+
+
+
+
+
+The plugin comprises multiple interoperating components that process source code and generate artifacts:
+
+1. **AST Processing**: Babel is employed to parse source files, identify directive-annotated functions, and extract their metadata.
+
+2. **Type Handling**: TypeScript type information is preserved during extraction but stripped from function bodies intended for main process execution.
+
+```mermaid
+flowchart TD
+    A[TypeScript Function] --> B{Component Extraction}
+    B -->|Type Annotations| C[TypeScript Definition Generation]
+    B -->|Implementation| D[Type Annotation Removal]
+    D --> E[JavaScript Runtime Compatible Code]
+    E --> F[Main Process Execution]
+    C --> G[Development Environment Type Safety]
+```
+
+
+
+3. **Function Transformation**: Original function bodies in renderer code are replaced with RPC stubs that delegate execution to the main process.
+
+4. **Preload Bridge Generation**: A preload script is generated to create IPC bridges between the renderer and main processes.
+
+5. **Main Handler Generation**: Main process handler code is generated to execute the original function bodies.
+
+### Workflow Detail
+```mermaid
+flowchart TD
+    A[Initiate Build Process] --> B[Parse Source Files]
+    
+    subgraph "Abstract Syntax Tree Analysis"
+        B --> C[Parse Source with Babel]
+        C --> D{Directive Present?}
+        D -->|No| E[Skip Processing]
+        D -->|Yes| F[AST Traversal]
+        F --> G{Function with Directive}
+        G -->|Located| H[Extract Metadata]
+        H --> I[Assign Function Identifier]
+        I --> J[Parse Parameter Information]
+        J --> K[Extract Return Type Signature]
+        K --> L[Isolate Function Implementation]
+        L --> M[Register Function Definition]
+        M --> N[Transform Function Implementation]
+        N --> O[Inject RPC Bridge Interface]
+        G -->|Not Located| P[Continue Analysis]
+        P --> G
+    end
+    
+    subgraph "Artifact Generation"
+        Q[Bundle Generation] --> R[Access Function Registry]
+        R --> S1[Compile Main Process Handlers]
+        R --> S2[Compile Preload IPC Bridge]
+        R --> S3[Generate TypeScript Definitions]
+        S1 --> T1[Emit Main Handler Module]
+        S2 --> T2[Emit Preload Bridge Module]
+        S3 --> T3[Emit Type Definition File]
+    end
+    
+    O --> Q
+    E --> Q
+```
+
+
+
+
+
+
+
+The workflow consists of two primary phases:
+
+1. **Build-time Processing**:
+   - Source code is parsed using Babel to construct an Abstract Syntax Tree (AST)
+   - Functions with `"use electron"` directives are identified
+   - Function metadata and bodies are extracted and stored in a manifest
+   - Function bodies in the renderer are replaced with RPC stubs
+   - Type definitions, preload bridges, and main process handlers are generated
+
+2. **Runtime Execution**:
+   - When a transformed function is called in the renderer, the RPC stub is executed
+   - The stub utilizes the preload bridge to communicate via IPC
+   - The main process handler receives the call and executes the original function body
+   - Results are returned via IPC to the renderer
+
+
+
+
+
+
+
+## Configuration Options
+
+The plugin provides configuration parameters that modify its behavior:
+
+```typescript
+interface UseMainPluginOptions {
+  generateTypes?: boolean;  // Controls type definition file generation
+  directiveKeyword?: 'use electron' | 'use electron-main' | 'use main'; // Specifies directive syntax
+}
+```
+
+## Implementation Considerations
+
+### Performance
+
+The plugin architecture has been designed with the following performance characteristics:
+
+1. **Build-time Processing**: Computational overhead is primarily incurred during the build phase rather than at runtime.
+
+2. **Runtime Efficiency**: Generated IPC mechanisms employ minimal serialization and direct function dispatch.
+
+3. **Caching**: Function metadata is cached in a manifest file to accelerate subsequent builds.
+
+4. **Error Handling**: Robust error pathways ensure graceful degradation if execution issues occur.
+
+### Security
+
+The plugin implementation adheres to Electron's security model:
+
+1. **Context Isolation**: All IPC communication occurs through the contextBridge API, maintaining process isolation.
+
+2. **Preload Security**: Only explicitly defined functions are exposed to the renderer process.
+
+3. **Parameter Validation**: Function parameters undergo validation before execution in the main process.
+
+## Integration
+
+The plugin is integrated into a Vite + Electron project as follows:
+
+1. **Renderer Process Configuration**:
+   ```javascript
+   // vite.config.ts
+   import { defineConfig } from 'vite';
+   import { useMainPlugin } from 'vite-plugin-use-electron';
+
+   export default defineConfig({
+     plugins: [
+       useMainPlugin('renderer', { generateTypes: true }),
+     ],
+   });
+   ```
+
+2. **Main Process Configuration**:
+   ```javascript
+   // vite.config.main.ts
+   import { defineConfig } from 'vite';
+   import { useMainPlugin } from 'vite-plugin-use-electron';
+
+   export default defineConfig({
+     plugins: [
+       useMainPlugin('main'),
+     ],
+   });
+   ```
+
+3. **Preload Script Configuration**:
+   ```javascript
+   // vite.config.preload.ts
+   import { defineConfig } from 'vite';
+   import { useMainPlugin } from 'vite-plugin-use-electron';
+
+   export default defineConfig({
+     plugins: [
+       useMainPlugin('preload'),
+     ],
+   });
+   ```
+
+4. **Main Process Integration**:
+   ```javascript
+   // main.js
+   const { setupMainHandlers } = require('./_generated_main_handlers.js');
+   
+   app.whenReady().then(() => {
+     setupMainHandlers();
+     // Additional initialization
+   });
+   ```
+
+5. **Preload Script Integration**:
+   ```javascript
+   // preload.js
+   require('./_generated_preload_bridge.js');
+   ```
+
+## Practical Applications
+
+The plugin facilitates efficient implementations of common Electron patterns:
+
+1. **File System Operations**:
+   ```typescript
+   export async function saveFile(path: string, content: string): Promise<void> {
+       "use electron";
+       await fs.promises.writeFile(path, content);
+   }
+   ```
+
+2. **System Information Retrieval**:
+   ```typescript
+   export async function getSystemInfo(): Promise<SystemInfo> {
+       "use electron";
+       return {
+           platform: os.platform(),
+           arch: os.arch(),
+           cpus: os.cpus(),
+           memory: os.totalmem(),
+           hostname: os.hostname()
+       };
+   }
+   ```
+
+3. **Native Dialog Presentation**:
+   ```typescript
+   export async function showOpenDialog(options: OpenDialogOptions): Promise<string[]> {
+       "use electron";
+       const { canceled, filePaths } = await dialog.showOpenDialog(options);
+       return canceled ? [] : filePaths;
+   }
+   ```
+
+## Conclusion
+
+The vite-plugin-use-electron plugin provides a systematic approach to Electron's inter-process communication requirements. By enabling the definition of main process functionality within renderer code context, it addresses architectural complexities inherent in Electron's process model. This directive-based pattern maintains type safety through TypeScript integration while automating the generation of necessary IPC infrastructure.
+
+The implementation demonstrates how build-time code transformation can be leveraged to create abstractions that simplify development workflows without compromising the underlying security model or performance characteristics of Electron applications.

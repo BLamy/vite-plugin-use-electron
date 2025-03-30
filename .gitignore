@@ -1,6 +1,46 @@
-node_modules
-dist
-out
+# Dependency directories
+node_modules/
+
+# Production build directory
+dist/
+
+# Temporary and cache directories
+.vite-plugin-use-electron/
+.vite/
+.temp/
+.cache/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS specific files
 .DS_Store
-.eslintcache
-*.log*
+Thumbs.db
+
+# Editor directories and files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Testing
+coverage/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# dotenv environment variables file
+.env
+.env.test
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local

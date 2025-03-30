@@ -2,12 +2,12 @@ import { resolve } from 'path'
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import react from '@vitejs/plugin-react'
 // Import your plugin (adjust path if needed)
-import { useMainPlugin } from './vite-plugin-use-electron' // <--- Make sure this path is correct
+import { useElectronMainPlugin } from './vite-plugin-use-electron' // <--- Make sure this path is correct
 
 export default defineConfig({
   main: {
     plugins: [
-      useMainPlugin('main'), // Move before externalizeDepsPlugin
+      useElectronMainPlugin('main'), // Move before externalizeDepsPlugin
       externalizeDepsPlugin()
     ],
     build: {
@@ -26,7 +26,7 @@ export default defineConfig({
   },
   preload: {
     plugins: [
-      useMainPlugin('preload'), // Move before externalizeDepsPlugin
+      useElectronMainPlugin('preload'), // Move before externalizeDepsPlugin
       externalizeDepsPlugin()
     ],
      build: {
@@ -48,7 +48,7 @@ export default defineConfig({
       }
     },
     plugins: [
-      useMainPlugin('renderer'), // Move before react plugin
+      useElectronMainPlugin('renderer'), // Move before react plugin
       react()
     ],
      build: {

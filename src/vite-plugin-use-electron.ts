@@ -13,13 +13,13 @@ import os from 'os';
 // Fix for ESM/CJS interop
 const traverse = (_traverse as any).default || _traverse;
 
-// --- Interfaces --- (remain the same)
+// --- Interfaces ---
 interface ParamInfo { name: string; typeString: string; }
 interface UseMainFunctionManifestEntry { id: string; name: string; params: ParamInfo[]; paramsString: string; returnTypeString: string; body: string; filePath: string; }
 type UseMainManifest = Record<string, UseMainFunctionManifestEntry>;
 
 // --- Plugin Options Interface ---
-interface useElectronMainPluginOptions {
+export interface useElectronMainPluginOptions {
   generateTypes?: boolean;
   directiveKeyword?: 'use electron' | 'use electron-main' | 'use main'; // Added option to configure the directive
 }
@@ -40,6 +40,74 @@ let rootDir = '';
 let accumulatedFunctions = new Map<string, UseMainFunctionManifestEntry>(); // Global map persists across hooks in one process
 let directiveKeyword = 'use electron'; // Default to 'use electron'
 
+
+// --- Helper Functions ---
+
+function stripTypeAnnotations(code: string, logger: ResolvedConfig['logger']): string {
+    if (!code || code.trim() === '') return '';
+
+    logger.info(`[${PLUGIN_NAME}] Stripping types from snippet:\n---\n${code}\n---`); // Log input
+
+    // First pass: direct replacement of known problematic patterns
+    // This is a targeted fix for the specific test case with "let hostname: string | undefined;"
+    let cleanedCode = code.replace(/(\b(?:let|const|var)\s+\w+)\s*:\s*[\w\s|<>?&[\]{}.]+(\s*=|\s*;)/g, '$1$2');
+
+    const wrapperFnName = `__vite_plugin_use_main_stripper_${Date.now()}__`; // More unique name
+    const wrappedCode = `async function ${wrapperFnName}() {\n${cleanedCode}\n}`;
+    try {
+        const result = transformSync(wrappedCode, {
+            filename: 'file.ts',
+            plugins: [
+                ['@babel/plugin-transform-typescript', {
+                    isTSX: false,
+                    allowNamespaces: true,
+                    allowDeclareFields: true,
+                }]
+            ],
+            configFile: false,
+            babelrc: false,
+            comments: false,
+            compact: false,
+            retainLines: true,
+        });
+
+        if (!result?.code) {
+            logger.warn(`[${PLUGIN_NAME}] Babel transform returned empty code. Input was logged above.`);
+            return applyRegexStripping(code, logger);
+        }
+
+        const regex = new RegExp(`async function ${wrapperFnName}\\s*\\(\\)\\s*\\{([\\s\\S]*?)\\s*\\}\\s*;?`, 's');
+        const match = result.code.match(regex);
+
+        if (match && typeof match[1] === 'string') {
+            let strippedBody = match[1].trim();
+            
+            // Apply additional regex-based type stripping to catch anything Babel missed
+            strippedBody = applyRegexStripping(strippedBody, logger);
+            
+            logger.info(`[${PLUGIN_NAME}] Final cleaned body:\n---\n${strippedBody}\n---`);
+            return strippedBody;
+        } else {
+            logger.warn(`[${PLUGIN_NAME}] Failed to extract body after stripping types. Regex failed. Babel output:\n${result.code}`);
+            let fallback = result.code
+                .replace(new RegExp(`^async function ${wrapperFnName}\\s*\\(\\)\\s*\\{`), '')
+                .replace(/\s*\}\s*;?\s*$/, '')
+                .trim();
+                
+            // Apply the regex stripping to the fallback
+            fallback = applyRegexStripping(fallback, logger);
+            
+            return fallback;
+        }
+    } catch (error: any) {
+        logger.error(`[${PLUGIN_NAME}] Error during stripTypeAnnotations: ${error.message}`);
+        if (error.code === 'BABEL_PARSE_ERROR') logger.error(`Babel Parsing Error Location: ${JSON.stringify(error.loc)}`);
+        else if (error.stack) logger.error(error.stack);
+        
+        // Emergency fallback - direct regex replacement if Babel fails completely
+        return applyRegexStripping(code, logger);
+    }
+}
 
 // Helper function to properly close template strings
 function fixTemplateStrings(code: string, logger: ResolvedConfig['logger']): string {
