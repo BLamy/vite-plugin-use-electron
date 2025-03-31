@@ -1,46 +1,46 @@
-# Dependency directories
-node_modules/
+# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
 
-# Production build directory
-dist/
+# compiled output
+dist
+tmp
+out-tsc
 
-# Temporary and cache directories
-.vite-plugin-use-electron/
-.vite/
-.temp/
-.cache/
+# dependencies
+node_modules
 
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
 
-# OS specific files
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# misc
+/.sass-cache
+/connect.lock
+/coverage
+/libpeerconnection.log
+npm-debug.log
+yarn-error.log
+testem.log
+/typings
+
+# System Files
 .DS_Store
 Thumbs.db
 
-# Editor directories and files
-.idea/
-.vscode/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+.nx/cache
+.nx/workspace-data
 
-# Testing
-coverage/
-
-# TypeScript cache
-*.tsbuildinfo
-
-# dotenv environment variables file
-.env
-.env.test
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+vite.config.*.timestamp*
+vitest.config.*.timestamp*
+test-output

@@ -1,0 +1,24 @@
+{
+  "name": "vite-plugin-use-electron-demo",
+  "version": "1.0.0",
+  "description": "Demo application for vite-plugin-use-electron",
+  "main": "./dist/main/index.js",
+  "private": true,
+  "scripts": {
+    "dev": "vite --force",
+    "build": "tsc && vite build",
+    "electron:dev": "electron-vite dev",
+    "electron:build": "electron-vite build"
+  },
+  "dependencies": {
+    "@electron-toolkit/preload": "^2.0.0",
+    "@electron-toolkit/utils": "^2.0.0",
+    "@tanstack/react-query": "^5.28.4",
+    "vite-plugin-use-electron": "file:../../libs/vite-plugin-use-electron"
+  },
+  "devDependencies": {
+    "electron": "^29.0.0",
+    "electron-builder": "^24.13.0",
+    "electron-vite": "^2.3.0"
+  }
+}

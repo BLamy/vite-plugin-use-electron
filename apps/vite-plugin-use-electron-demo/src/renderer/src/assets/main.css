@@ -1,0 +1,89 @@
+:root {
+  --color-primary: #2563eb;
+  --color-secondary: #8b5cf6;
+  --color-success: #10b981;
+  --color-error: #ef4444;
+  --color-text: #374151;
+  --color-background: #f9fafb;
+  --color-border: #e5e7eb;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  color: var(--color-text);
+  background-color: var(--color-background);
+}
+
+.logo {
+  display: block;
+  margin: 0 auto;
+  height: 80px;
+}
+
+.creator {
+  text-align: center;
+  font-size: 14px;
+  color: #555;
+  margin-top: 10px;
+}
+
+button {
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+button:hover {
+  background-color: #1d4ed8;
+}
+
+button:disabled {
+  background-color: #93c5fd;
+  cursor: not-allowed;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.action {
+  text-align: center;
+}
+
+.action a {
+  color: var(--color-primary);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.action a:hover {
+  text-decoration: underline;
+}
+
+.versions {
+  list-style: none;
+  text-align: center;
+  font-size: 12px;
+  color: #666;
+  margin-top: 20px;
+}
+
+.versions li {
+  display: inline-block;
+  margin: 0 8px;
+} 

@@ -1,0 +1,47 @@
+{
+  "name": "vite-plugin-use-electron",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/vite-plugin-use-electron/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nx/vite:build",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/vite-plugin-use-electron"
+      },
+      "postTargets": ["vite-plugin-use-electron:copy-files"]
+    },
+    "copy-files": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "cp libs/vite-plugin-use-electron/README.md dist/libs/vite-plugin-use-electron/",
+          "cp libs/vite-plugin-use-electron/LICENSE dist/libs/vite-plugin-use-electron/ || echo 'No LICENSE file found'",
+          "mkdir -p dist/libs/vite-plugin-use-electron/dist",
+          "cp -R libs/vite-plugin-use-electron/dist/* dist/libs/vite-plugin-use-electron/dist/ || echo 'No files found in build dir'"
+        ],
+        "parallel": false
+      }
+    },
+    "publish": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node tools/scripts/publish.mjs vite-plugin-use-electron {args.ver} {args.tag}"
+      },
+      "dependsOn": ["build"]
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"]
+    },
+    "test": {
+      "executor": "@nx/vite:test",
+      "outputs": ["{projectRoot}/coverage"],
+      "options": {
+        "passWithNoTests": true
+      }
+    }
+  },
+  "tags": []
+} 

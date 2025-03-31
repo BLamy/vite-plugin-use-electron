@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+      
+permissions:
+  actions: read
+  contents: write # Upgraded to write for release tagging
+  packages: write # Added for npm publishing
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Cache node_modules
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org' # Added for npm publishing
+
+      - run: npm ci --legacy-peer-deps
+      - run: npx playwright install --with-deps
+      - uses: nrwl/nx-set-shas@v4
+
+      # For pull requests - run tests and build only
+      - if: github.event_name == 'pull_request'
+        run: npx nx affected -t lint test build e2e
+
+      # For main branch - create a release
+      - name: Version Bump & Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: version-bump
+        run: |
+          # Determine version bump type based on commit messages
+          BUMP_TYPE="patch"  # Default to patch
+          if git log -1 --pretty=%B | grep -i "BREAKING CHANGE"; then
+            BUMP_TYPE="major"
+          elif git log -1 --pretty=%B | grep -i "feat"; then
+            BUMP_TYPE="minor"
+          fi
+          
+          # Get current version
+          CURRENT_VERSION=$(node -p "require('./libs/vite-plugin-use-electron/package.json').version")
+          echo "Current version: $CURRENT_VERSION"
+          
+          # Split version into parts
+          IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
+          MAJOR=${VERSION_PARTS[0]}
+          MINOR=${VERSION_PARTS[1]}
+          PATCH=${VERSION_PARTS[2]}
+          
+          # Bump version based on type
+          if [ "$BUMP_TYPE" = "major" ]; then
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
+          elif [ "$BUMP_TYPE" = "minor" ]; then
+            MINOR=$((MINOR + 1))
+            PATCH=0
+          else
+            PATCH=$((PATCH + 1))
+          fi
+          
+          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          echo "New version: $NEW_VERSION"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          
+          # Set Git user
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "github-actions@github.com"
+          
+          # Update package.json version
+          sed -i "s/\"version\": \"$CURRENT_VERSION\"/\"version\": \"$NEW_VERSION\"/" libs/vite-plugin-use-electron/package.json
+          
+          # Commit and push version bump
+          git add libs/vite-plugin-use-electron/package.json
+          git commit -m "chore: bump version to $NEW_VERSION [skip ci]"
+          git push
+          
+          # Build the library
+          npx nx build vite-plugin-use-electron
+          
+          # Publish to npm
+          npx nx publish vite-plugin-use-electron --ver=$NEW_VERSION --tag=latest
+
+      # Create GitHub release after successful publish
+      - name: Create GitHub Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.version-bump.outputs.new_version }}
+          release_name: Release v${{ steps.version-bump.outputs.new_version }}
+          draft: false
+          prerelease: false
