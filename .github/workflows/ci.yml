@@ -16,6 +16,9 @@ permissions:
 jobs:
   main:
     runs-on: ubuntu-latest
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -113,13 +116,19 @@ jobs:
           git commit -m "chore: bump version to $NEW_VERSION [skip ci]"
           git push
           
-          # Build the library
+          # Build and publish the library
           cd libs/vite-plugin-use-electron
-          pnpm install
+          
+          # Create .npmrc with auth token
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
+          
+          # Install dependencies including dev dependencies
+          NODE_ENV=development pnpm install
+          
+          # Build with production settings
           NODE_ENV=production pnpm build
           
           # Publish to npm
-          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
           npm publish --access public --tag latest
           cd ../../
 
