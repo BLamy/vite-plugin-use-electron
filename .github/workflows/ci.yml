@@ -16,16 +16,13 @@ permissions:
 jobs:
   main:
     runs-on: ubuntu-latest
-    env:
-      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Setup Node.js
+      # Setup Node.js with auth token
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -69,6 +66,8 @@ jobs:
       - name: Version Bump & Release
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         id: version-bump
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           # Determine version bump type based on commit messages
           BUMP_TYPE="patch"  # Default to patch
@@ -119,17 +118,15 @@ jobs:
           # Build and publish the library
           cd libs/vite-plugin-use-electron
           
-          # Create .npmrc with auth token
-          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
-          
           # Install dependencies including dev dependencies
           NODE_ENV=development pnpm install
           
           # Build with production settings
           NODE_ENV=production pnpm build
           
-          # Publish to npm
-          npm publish --access public --tag latest
+          # Publish to npm using NODE_AUTH_TOKEN
+          npm config set //registry.npmjs.org/:_authToken ${NODE_AUTH_TOKEN}
+          npm publish --access public
           cd ../../
 
       # Create GitHub Release after successful publish
