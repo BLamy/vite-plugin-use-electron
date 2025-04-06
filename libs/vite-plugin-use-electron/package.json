@@ -46,8 +46,12 @@
     }
   },
   "dependencies": {
+    "@babel/parser": "^7.27.0",
+    "@babel/traverse": "^7.27.0",
+    "@babel/types": "^7.27.0",
     "@tanstack/react-query": "^5.71.0",
     "@testing-library/react": "^16.2.0",
+    "@types/babel__traverse": "^7.20.7",
     "fs-extra": "^11.2.0",
     "magic-string": "^0.30.17",
     "path": "^0.12.7"
@@ -56,10 +60,6 @@
     "access": "public"
   },
   "devDependencies": {
-    "@babel/parser": "^7.27.0",
-    "@babel/traverse": "^7.27.0",
-    "@babel/types": "^7.27.0",
-    "@types/babel__traverse": "^7.20.7",
     "jsdom": "^26.0.0"
   }
 }
