@@ -1,6 +1,6 @@
 {
   "name": "vite-plugin-use-electron",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "A Vite plugin to simplify using Electron APIs in the renderer process",
   "type": "module",
   "main": "./dist/index.js",
