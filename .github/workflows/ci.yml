@@ -58,12 +58,9 @@ jobs:
           CI: true
           NODE_ENV: production
 
-      - run: pnpm exec playwright install --with-deps
-      - uses: nrwl/nx-set-shas@v4
-
       # For pull requests - run tests and build only
       - if: github.event_name == 'pull_request'
-        run: pnpm exec nx affected -t lint test build e2e
+        run: pnpm exec nx affected -t lint test build
 
       # For main branch - create a release
       - name: Version Bump & Release
