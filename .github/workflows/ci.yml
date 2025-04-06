@@ -116,9 +116,7 @@ jobs:
           git push
           
           # Build the library
-          cd libs/vite-plugin-use-electron
-          pnpm install
-          pnpm build
+          pnpm exec nx build vite-plugin-use-electron
           
           # Publish to npm
           echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
