@@ -26,13 +26,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          registry-url: 'https://registry.npmjs.org' # Added for npm publishing
+          registry-url: 'https://registry.npmjs.org'
 
       # Setup pnpm
       - name: Install pnpm
         uses: pnpm/action-setup@v2
         with:
           version: 8
+          run_install: false # We'll run install after setting up cache
 
       # Setup pnpm cache
       - name: Get pnpm store directory
@@ -49,7 +50,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
-      - run: pnpm install
+      # Install dependencies
+      - name: Install dependencies
+        run: |
+          pnpm install --frozen-lockfile
+        env:
+          CI: true
+
       - run: pnpm exec playwright install --with-deps
       - uses: nrwl/nx-set-shas@v4
 
