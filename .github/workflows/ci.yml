@@ -117,6 +117,7 @@ jobs:
           
           # Build the library
           cd libs/vite-plugin-use-electron
+          pnpm install
           pnpm build
           
           # Publish to npm
