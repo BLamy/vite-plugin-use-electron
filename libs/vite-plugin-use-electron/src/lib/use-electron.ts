@@ -564,7 +564,7 @@ async function __electron_rpc_call(functionId, args) {
                 let paramsStringWithTypes = '';
 
                 if ('params' in node && node.params?.length > 0) {
-                    node.params.forEach(param => paramsInfo.push(extractParamInfo(param, originalCode)));
+                    node.params.forEach((param: BabelTypes.Node) => paramsInfo.push(extractParamInfo(param, originalCode)));
 
                     const firstParam = node.params[0];
                     const lastParam = node.params[node.params.length - 1];

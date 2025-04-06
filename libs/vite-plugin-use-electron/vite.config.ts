@@ -5,31 +5,20 @@ import dts from 'vite-plugin-dts';
 export default defineConfig({
   build: {
     lib: {
-      entry: resolve(__dirname, 'src/index.ts'),
-      name: 'vitePluginUseElectron',
-      fileName: 'index',
+      entry: resolve(__dirname, 'src/lib/use-electron.ts'),
       formats: ['es'],
+      fileName: 'index'
     },
     rollupOptions: {
-      external: ['react', 'vite', 'electron', 'fs-extra', 'path', 'os'],
-      output: {
-        globals: {
-          react: 'React',
-          vite: 'Vite',
-          electron: 'Electron',
-          'fs-extra': 'fs',
-          path: 'path',
-          os: 'os'
-        },
-      },
-    },
-    sourcemap: true,
-    minify: 'esbuild',
+      external: [
+        '@babel/parser',
+        '@babel/traverse',
+        '@babel/types',
+        'magic-string',
+        'react',
+        'vite'
+      ]
+    }
   },
-  plugins: [
-    dts({
-      insertTypesEntry: true,
-      include: ['src'],
-    }),
-  ],
+  plugins: [dts()]
 }); 
