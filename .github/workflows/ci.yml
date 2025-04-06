@@ -16,6 +16,7 @@ permissions:
 jobs:
   main:
     runs-on: ubuntu-latest
+    environment: ci
     steps:
       - uses: actions/checkout@v4
         with:
@@ -63,11 +64,9 @@ jobs:
         run: pnpm exec nx affected -t lint test build
 
       # For main branch - create a release
-      - name: Version Bump & Release
+      - name: Version Bump & Build
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         id: version-bump
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           # Determine version bump type based on commit messages
           BUMP_TYPE="patch"  # Default to patch
@@ -115,15 +114,8 @@ jobs:
           git commit -m "chore: bump version to $NEW_VERSION [skip ci]"
           git push
           
-          # Build and publish the library
+          # Build the library
           cd libs/vite-plugin-use-electron
-          
-          # Create .npmrc file
-          cat > .npmrc << EOF
-          //registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}
-          registry=https://registry.npmjs.org/
-          always-auth=true
-          EOF
           
           # Install dependencies including dev dependencies
           NODE_ENV=development pnpm install
@@ -131,11 +123,21 @@ jobs:
           # Build with production settings
           NODE_ENV=production pnpm build
           
-          # Publish to npm
-          npm publish --access public
-          cd ../../
+          # Copy package.json to dist for publishing
+          cp package.json dist/
+          cp README.md dist/
+          cp LICENSE dist/
 
-      # Create GitHub Release after successful publish
+      # Publish to npm
+      - name: Publish to NPM
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: JS-DevTools/npm-publish@v3
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
+          package: ./libs/vite-plugin-use-electron/dist/package.json
+          access: public
+
+      # Create GitHub Release
       - name: Create GitHub Release
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/create-release@v1
