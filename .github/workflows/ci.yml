@@ -116,10 +116,13 @@ jobs:
           git push
           
           # Build the library
-          pnpm exec nx build vite-plugin-use-electron
+          cd libs/vite-plugin-use-electron
+          pnpm build
           
           # Publish to npm
-          pnpm exec nx publish vite-plugin-use-electron --ver=$NEW_VERSION --tag=latest
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
+          npm publish --access public --tag latest
+          cd ../../
 
       # Create GitHub Release after successful publish
       - name: Create GitHub Release
