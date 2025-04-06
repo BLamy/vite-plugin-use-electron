@@ -26,16 +26,36 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
           registry-url: 'https://registry.npmjs.org' # Added for npm publishing
 
-      - run: npm ci --legacy-peer-deps
-      - run: npx playwright install --with-deps
+      # Setup pnpm
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          run_install: false
+
+      # Get pnpm store directory
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      # Setup cache
+      - uses: actions/cache@v3
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - run: pnpm install
+      - run: pnpm exec playwright install --with-deps
       - uses: nrwl/nx-set-shas@v4
 
       # For pull requests - run tests and build only
       - if: github.event_name == 'pull_request'
-        run: npx nx affected -t lint test build e2e
+        run: pnpm exec nx affected -t lint test build e2e
 
       # For main branch - create a release
       - name: Version Bump & Release
@@ -89,12 +109,12 @@ jobs:
           git push
           
           # Build the library
-          npx nx build vite-plugin-use-electron
+          pnpm exec nx build vite-plugin-use-electron
           
           # Publish to npm
-          npx nx publish vite-plugin-use-electron --ver=$NEW_VERSION --tag=latest
+          pnpm exec nx publish vite-plugin-use-electron --ver=$NEW_VERSION --tag=latest
 
-      # Create GitHub release after successful publish
+      # Create GitHub Release after successful publish
       - name: Create GitHub Release
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/create-release@v1
