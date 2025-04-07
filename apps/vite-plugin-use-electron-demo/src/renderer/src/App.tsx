@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Versions from './components/Versions'
 import SystemInfo from './components/SystemInfo'
-import { addNumbers, riskyOperation, testMainFunction } from '@renderer/actions/main-operations'
+import { addNumbers, riskyOperation, testMainFunction } from './actions/main-operations'
 import electronLogo from './assets/electron.svg'
 
 function App(): JSX.Element {

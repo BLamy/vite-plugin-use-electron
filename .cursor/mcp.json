@@ -1,5 +1,11 @@
 {
   "mcpServers": {
+    "chrome-dev-tools": {
+      "command": "node",
+      "args": [
+        "./.cursor/browser-tools-wrapper.js"
+      ]
+    },
     "nx-mcp": {
       "url": "http://localhost:9677/sse"
     }
