@@ -7,7 +7,7 @@ test('has title', async ({ page }) => {
   expect(await page.locator('h1').innerText()).toContain('Welcome');
 });
 
-test('has title2', async ({ page }) => {
+test('has title1', async ({ page }) => {
   await page.goto('/');
 
   // Expect h1 to contain a substring.
